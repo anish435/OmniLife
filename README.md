@@ -1,765 +1,436 @@
-# OmniLife — Proof of Concept (PoC) & Complete Feature Architecture
+# OmniLife — Placement-Level Flutter Project Plan
 
-## 1. Project Overview
+## Project
+**OmniLife — AI Personal Life Operating System**
 
-**OmniLife** is an AI-powered personal productivity and life-management mobile application built with Flutter.
+## Goal
 
-The core idea is not simply to place many utilities inside one app. OmniLife connects those utilities so that information can flow between modules:
+Build a production-style Flutter Android application that demonstrates the complete
+`23CSE465 Mobile Application Development` syllabus while also showcasing practical
+software-engineering skills expected in placements.
 
-> **Capture → Understand → Plan → Act → Track → Learn**
+OmniLife connects:
 
-Examples:
-
-- A note can be converted into tasks.
-- Tasks can be scheduled on the calendar.
-- Calendar events can trigger reminders.
-- Completed tasks contribute to productivity analytics.
-- Expenses contribute to financial analytics.
-- AI can summarize the user's activity and provide recommendations.
-
-### Primary objective
-
-Build a scalable mobile application that demonstrates the major concepts in the Mobile Application Development syllabus while providing a realistic foundation for AI, cloud, offline, location, notification, and analytics features.
-
----
-
-# 2. Project Scope
-
-OmniLife is divided into the following major domains:
-
-1. Authentication & Onboarding
-2. Home Dashboard
-3. AI Assistant
-4. Task Management
-5. Calendar & Smart Scheduling
-6. Notes & Knowledge Management
-7. Habit Tracking
-8. Expense & Finance Management
-9. Health & Wellness
-10. Notifications & Reminders
-11. Analytics & Insights
-12. Maps & Location Services
-13. Document Vault
-14. News & External Information
-15. Community
-16. Messaging
-17. Profile & Settings
-18. Offline & Synchronization
-19. Backend & Cloud Services
-20. Testing, Security & Deployment
-
-Not every module needs to be implemented in the first release. The architecture should support future expansion.
-
----
-
-# 3. Feature Architecture
-
-## 3.1 Authentication & Onboarding
-
-### Screens
-
-- Splash Screen
-- Onboarding 1
-- Onboarding 2
-- Onboarding 3
-- Login
-- Register
-- Forgot Password
-- OTP Verification (optional)
-- Account Setup
-
-### Features
-
-- Email/password authentication
-- Google authentication (optional)
-- Profile creation
-- Preference selection
-- Theme preference
-- Notification permission
-- Location permission
-
-### Future
-
-- Biometric login
-- Passkeys
-- Multi-device session management
-
----
-
-# 4. Home Dashboard
-
-The Home screen is the central control center.
-
-### Header
-
-- Personalized greeting
-- Current date
-- Profile avatar
-- Notification icon
-
-### AI Command Bar
-
-> "Ask OmniLife anything..."
-
-Examples:
-
-- "What should I do today?"
-- "Create a task for tomorrow."
-- "Summarize my notes."
-- "How much did I spend this month?"
-
-### Dashboard cards
-
-- Today's Progress
-- Today's Tasks
-- Upcoming Events
-- Habit Progress
-- Expense Summary
-- Weather
-- AI Insight
-- Reminders
-
-### Quick Actions
-
-- Add Task
-- Add Event
-- Add Note
-- Add Expense
-- Add Habit
-- Ask AI
-
-### Personalization
-
-The dashboard should eventually adapt to the user's selected profile/use case.
-
----
-
-# 5. Task Management
-
-## Task List
-
-- All
-- Today
-- Upcoming
-- Completed
-- Overdue
-
-## Create Task
-
-Fields:
-
-- Title
-- Description
-- Category
-- Priority
-- Due Date
-- Due Time
-- Reminder
-- Repeat
-- Subtasks
-- Attachments
-
-## Task operations
-
-- Create
-- Read
-- Update
-- Delete
-- Complete
-- Duplicate
-- Archive
-
-## Interaction
-
-- Tap → details
-- Swipe → actions
-- Long press → edit/delete
-- Checkbox → complete
-
-## AI integration
-
-### Natural-language task creation
-
-User:
-
-> "Submit my DBMS assignment tomorrow at 5 PM."
-
-AI converts it into a structured task.
-
-### AI prioritization
-
-AI analyzes:
-
-- Deadline
-- Priority
-- Estimated effort
-- Dependencies
-- Calendar availability
-
-and suggests an order.
-
-### Notes → Tasks
-
-AI detects action items in notes and offers to convert them into tasks.
-
----
-
-# 6. Calendar & Smart Scheduling
-
-## Calendar
-
-- Month view
-- Week view
-- Day agenda
-- Event details
-- Create event
-- Edit event
-- Delete event
-
-## Event fields
-
-- Title
-- Description
-- Date
-- Start time
-- End time
-- Location
-- Reminder
-- Repeat
-
-## Smart Scheduling
-
-Future AI feature:
-
-> "I need to study DBMS for 3 hours before Friday."
-
-AI checks:
-
-- Existing calendar events
-- Tasks
-- Available time
-
-and suggests schedule blocks.
-
----
-
-# 7. Notes & Knowledge Management
-
-## Notes
-
-- Create
-- Edit
-- Delete
-- Pin
-- Archive
-- Search
-- Categories
-- Tags
-
-## Note types
-
-- Text note
-- Checklist
-- Study note
-- Meeting note
-- Idea
-- Personal note
-
-## Rich content — future
-
-- Bold
-- Italic
-- Lists
-- Images
-- Attachments
-- Voice notes
-
-## AI capabilities
-
-### Summarize
-
-Convert long notes into concise summaries.
-
-### Explain
-
-Explain selected concepts.
-
-### Quiz generation
-
-Generate questions from notes.
-
-### Note → Task
-
-Extract actionable items.
-
-### Semantic search
-
-Example:
-
-> "Where did I write about database normalization?"
-
-AI searches notes by meaning rather than only exact keywords.
-
----
-
-# 8. Habit Tracker
-
-## Features
-
-- Create habit
-- Daily completion
-- Streaks
-- Weekly/monthly statistics
-- Habit categories
-- Reminder
-- Goal frequency
-
-Examples:
-
-- Study
-- Exercise
-- Reading
-- Water
-- Meditation
-
-## Dashboard
-
-- Current streak
-- Completion percentage
-- Weekly chart
-- Monthly consistency
-
-## AI
-
-AI can suggest habits based on goals and existing behavior.
-
----
-
-# 9. Expense & Finance Management
-
-## Expense features
-
-- Add income
-- Add expense
-- Categories
-- Payment method
-- Date
+- AI Life Copilot
+- Tasks & Projects
+- Calendar
 - Notes
-- Recurring expenses
+- Habits & Goals
+- Finance
+- Wellness
+- Analytics
+- Maps/GPS
+- Sensors
+- Notifications
+- Media/Focus Mode
 
-## Categories
-
-- Food
-- Transport
-- Education
-- Shopping
-- Entertainment
-- Bills
-- Other
-
-## Analytics
-
-- Daily spending
-- Weekly spending
-- Monthly spending
-- Category breakdown
-- Income vs expenses
-- Savings
-
-## AI
-
-Examples:
-
-> "How much did I spend on food this month?"
-
-> "Where can I reduce my spending?"
-
-> "Compare this month with last month."
-
-AI should use stored user data rather than inventing financial information.
+The key differentiator is that these modules are connected rather than being
+independent CRUD screens.
 
 ---
 
-# 10. Health & Wellness
+# 1. Recommended Development Strategy
 
-Keep this module lightweight in the academic MVP.
+## Do NOT build the entire backend first and then the entire frontend.
 
-## Features
+That approach can work for web applications, but for a first mobile application it
+creates a serious risk: the backend contracts, mobile state model, navigation,
+offline behavior, permissions, and UI interactions may not match what the Flutter
+application actually needs.
 
-- BMI calculator
-- Water tracking
-- Exercise logging
-- Sleep logging
-- Medicine reminders
-- Basic wellness goals
-
-## Device integration — future
-
-- Step count
-- Accelerometer
-- Health platform integration
-
-## Important
-
-AI health functionality should be framed as general wellness information, not medical diagnosis.
-
----
-
-# 11. Notifications & Reminders
-
-## Notifications
-
-- Task reminders
-- Event reminders
-- Habit reminders
-- Medicine reminders
-- Expense reminders
-- AI-generated reminders
-
-## Technologies
-
-- Local notifications
-- Firebase Cloud Messaging
-
-## Notification flow
+Instead use a **hybrid + vertical-slice approach**:
 
 ```text
-Task/Event/Habit
-       ↓
-Reminder Scheduler
-       ↓
-Notification Service
-       ↓
-User Device
+Architecture
+     ↓
+Backend foundation
+     ↓
+Flutter foundation
+     ↓
+FIRST VERTICAL SLICE
+Auth → Task → Firebase → Offline → Sync → UI
+     ↓
+Expand module by module
+     ↓
+AI integration
+     ↓
+Device features
+     ↓
+Testing + optimization
+     ↓
+Production polish
+```
+
+You should still design the backend/data model first, but do not try to finish the
+whole backend before writing meaningful Flutter code.
+
+### Rule
+
+For every major feature:
+
+```text
+Data model
+→ Repository/API
+→ Flutter state
+→ UI
+→ Offline behavior
+→ Firebase sync
+→ Tests
+```
+
+This keeps the project continuously runnable.
+
+---
+
+# 2. Target Architecture
+
+```text
+                         OMNILIFE MOBILE APP
+                                  │
+                     ┌────────────▼────────────┐
+                     │ Presentation Layer      │
+                     │ Flutter + GetX + BLoC    │
+                     └────────────┬────────────┘
+                                  │
+                     ┌────────────▼────────────┐
+                     │ Domain / Use Cases       │
+                     │ Business Rules            │
+                     └────────────┬────────────┘
+                                  │
+                     ┌────────────▼────────────┐
+                     │ Repository Layer         │
+                     └────────────┬────────────┘
+                                  │
+              ┌───────────────────┼───────────────────┐
+              ↓                   ↓                   ↓
+          SQFLite             Firebase             REST API
+          Offline             Cloud                 Weather/
+          Cache               Services              News/etc.
+              │                   │
+              │          ┌────────┼─────────┐
+              │          ↓        ↓         ↓
+              │        Auth   Firestore   Storage
+              │                   │
+              │             Realtime DB
+              │                   │
+              │                  FCM
+              │
+              └──────────── Sync Engine
+                                  │
+                         Optional Backend
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ↓             ↓             ↓
+                 Gemini          Groq        MongoDB
+                    │             │             │
+                    └─────────────┼─────────────┘
+                                  ↓
+                            AI Tool Layer
+                                  │
+                  ┌───────────────┼────────────────┐
+                  ↓               ↓                ↓
+                Tasks           Notes           Calendar
+                  ↓               ↓                ↓
+                Habits          Finance          Wellness
+```
+
+Additional infrastructure:
+
+```text
+GPS → Maps
+Sensors → InfluxDB
+Analytics → Firebase Analytics
+Crashes → Firebase Crashlytics
+Push → Firebase Cloud Messaging
+Media → Audio/Video service
 ```
 
 ---
 
-# 12. Analytics & Insights
+# 3. Phase Overview
 
-Central analytics dashboard.
-
-## Productivity
-
-- Tasks completed
-- Completion percentage
-- Overdue tasks
-- Productivity trend
-
-## Habits
-
-- Streaks
-- Consistency
-- Completion rate
-
-## Finance
-
-- Spending
-- Income
-- Savings
-- Category distribution
-
-## Charts
-
-- Line chart
-- Bar chart
-- Pie/donut chart
-- Progress indicators
-
-## AI Insights
-
-Examples:
-
-> "You complete most tasks in the evening."
-
-> "Your food expenses increased compared with the previous month."
-
-Insights should be generated from actual stored data.
+| Phase | Focus | Main Result |
+|---|---|---|
+| 0 | Requirements & architecture | Technical blueprint |
+| 1 | Development environment | Stable Flutter project |
+| 2 | Backend/data foundation | Firebase + DB architecture |
+| 3 | Flutter foundation | App shell + design system |
+| 4 | First vertical slice | Auth → Task → Firebase → Offline |
+| 5 | Productivity core | Tasks + Calendar + Notes |
+| 6 | Personal life modules | Habits + Finance + Wellness |
+| 7 | AI platform | AI Copilot + tools |
+| 8 | Device/cloud features | FCM + Maps + GPS + Sensors + Media |
+| 9 | Analytics + databases | Charts + MongoDB + InfluxDB |
+| 10 | Advanced Flutter | BLoC + isolates + animations |
+| 11 | Testing + security | Production quality |
+| 12 | Deployment + placement polish | Final release + portfolio |
 
 ---
 
-# 13. Maps & Location
+# PHASE 0 — Requirements, Architecture & Product Design
 
-## Features
+## Objective
 
-- Current location
-- Nearby places
-- Location picker
-- Event location
-- Directions
+Freeze the architecture before heavy implementation.
 
-Possible nearby services:
+## Tasks
 
-- Hospitals
-- Pharmacies
-- Gyms
-- Restaurants
-- ATMs
-- Petrol stations
+### 0.1 Define modules
 
-## Technology
+Core:
 
-- GPS
-- Google Maps
-- Geolocation APIs
+- Dashboard
+- AI Copilot
+- Tasks
+- Calendar
+- Notes
+- Habits
+- Finance
+- Wellness
+- Analytics
 
----
+Supporting:
 
-# 14. Document Vault
-
-Optional but useful expansion.
-
-## Features
-
-- Upload document
-- View document
-- Delete
-- Categorize
-- Search
-
-Categories:
-
-- Certificates
-- IDs
-- Receipts
-- Academic documents
-- Personal documents
-
-Future AI:
-
-- OCR
-- Document summarization
-- Automatic categorization
-
----
-
-# 15. News & External Information
-
-Optional module.
-
-## Features
-
-- Technology news
-- Education news
-- Business news
-- Personalized feed
-- Bookmark articles
-
-## REST API concepts
-
-- HTTP requests
-- JSON parsing
-- Model classes
-- Loading states
-- Error handling
-
----
-
-# 16. Community
-
-Optional advanced module.
-
-## Features
-
-- Posts
-- Comments
-- Likes
-- Categories
-- Search
-- Report content
-
-Possible communities:
-
-- Study
-- Technology
-- Productivity
-- Fitness
-- Projects
-
-Firebase can be used for real-time updates.
-
----
-
-# 17. Messaging
-
-Optional advanced module.
-
-## Features
-
-- One-to-one chat
-- Group chat
-- Text messages
-- Image/file sharing
-- Message timestamps
-
-Future AI:
-
-- Conversation summarization
-- Smart reply suggestions
-
----
-
-# 18. Profile & Settings
-
-## Profile
-
-- Name
-- Email
-- Profile picture
-- Bio
-- Statistics
-- Achievements
-
-## Settings
-
-- Light/Dark/System theme
+- Authentication
 - Notifications
-- Language
-- Privacy
-- Data export
-- Backup/sync
-- About
-- Help & Support
-- Logout
+- Maps/GPS
+- Sensors
+- Media
+- Profile/Settings
 
----
+### 0.2 Define entities
 
-# 19. AI Architecture
-
-AI should be an enhancement layer across OmniLife.
-
-## AI Assistant
+Start with:
 
 ```text
 User
-  ↓
-AI Chat Interface
-  ↓
-AI Service
-  ↓
-Intent Detection
-  ↓
-Context Retrieval
-  ↓
-OmniLife Module
-  ↓
-Action / Answer
+Task
+Project
+Subtask
+CalendarEvent
+Note
+Habit
+Goal
+Expense
+Income
+WellnessLog
+AIConversation
+AIMessage
+Attachment
+Notification
+Location
+SensorReading
 ```
 
-### Example
-
-User:
-
-> "What should I focus on today?"
-
-```text
-AI
- ↓
-Read Tasks
- ↓
-Read Calendar
- ↓
-Read Habits
- ↓
-Check Deadlines
- ↓
-Generate Recommendation
-```
-
-### AI capabilities
-
-1. General chatbot
-2. Natural-language task creation
-3. Note summarization
-4. Note-to-task conversion
-5. Quiz generation
-6. Smart scheduling
-7. Productivity insights
-8. Expense analysis
-9. Personalized recommendations
-10. Voice input (future)
-
-### Important architecture principle
-
-The AI must not directly modify important user data without confirmation.
+### 0.3 Define relationships
 
 Example:
 
 ```text
-AI: I found 3 tasks in your note.
-
-☑ Submit report
-☑ Meet project team
-☑ Complete database module
-
-[Add Tasks] [Cancel]
+User
+ ├── Projects
+ ├── Tasks
+ ├── Events
+ ├── Notes
+ ├── Habits
+ ├── Expenses
+ ├── WellnessLogs
+ └── AIConversations
 ```
 
----
+### 0.4 Define feature contracts
 
-# 20. Data Architecture
+For every module document:
 
-## Local
+- Input
+- Output
+- Database model
+- Repository methods
+- Controller/BLoC state
+- Error states
+- Loading states
+- Offline behavior
 
-Use **SQFLite** for:
+## Deliverable
 
-- Cached tasks
-- Notes
-- Calendar data
-- Habits
-- Expenses
-- Offline queue
-
-## Cloud
-
-Use **Firebase** for:
-
-- Authentication
-- Firestore
-- Cloud synchronization
-- Push notifications
-- File storage
-
-## Optional backend
-
-Use Node.js/FastAPI with MongoDB if a dedicated backend is required.
+`docs/architecture.md`
 
 ---
 
-# 21. Suggested Firebase Collections
+# PHASE 1 — Development Environment & Repository
+
+## Objective
+
+Create the actual development foundation.
+
+## Tasks
+
+- Create Flutter project
+- Configure Android application ID
+- Configure Git
+- Create GitHub repository
+- Set up branch strategy
+- Configure linting/formatting
+- Configure environment variables
+- Add `.gitignore`
+- Add README
+- Run `flutter doctor`
+- Run clean Android build
+- Test on physical Android device
+
+## Recommended Git branches
 
 ```text
-users
-  └── userId
-      ├── profile
-      ├── preferences
+main
+develop
+feature/*
+fix/*
+```
 
+Never develop everything directly on `main`.
+
+## Deliverable
+
+A blank Flutter application that builds and runs reliably.
+
+---
+
+# PHASE 2 — Backend & Data Foundation
+
+This is where your instinct to start with the backend is useful.
+
+But build the **foundation**, not the complete backend.
+
+## 2.1 Firebase
+
+Use:
+
+- Firebase Authentication
+- Cloud Firestore
+- Realtime Database
+- Cloud Storage
+- Firebase Cloud Messaging
+- Firebase Analytics
+- Firebase Crashlytics
+
+The supplied Firebase guide recommends using FlutterFire CLI and
+`flutterfire configure` to connect the Flutter application to Firebase.
+It also specifies initializing Firebase before `runApp`. 
+
+## 2.2 Firebase setup order
+
+```text
+Firebase project
+     ↓
+FlutterFire CLI
+     ↓
+flutterfire configure
+     ↓
+firebase_core
+     ↓
+Firebase.initializeApp()
+     ↓
+Authentication
+     ↓
+Firestore
+     ↓
+Storage
+     ↓
+Realtime Database
+     ↓
+FCM
+     ↓
+Analytics
+     ↓
+Crashlytics
+```
+
+## 2.3 Firestore structure
+
+Recommended:
+
+```text
+users/{uid}
+
+users/{uid}/tasks/{taskId}
+users/{uid}/projects/{projectId}
+users/{uid}/events/{eventId}
+users/{uid}/notes/{noteId}
+users/{uid}/habits/{habitId}
+users/{uid}/goals/{goalId}
+users/{uid}/expenses/{expenseId}
+users/{uid}/wellness/{logId}
+users/{uid}/conversations/{conversationId}
+```
+
+This keeps user-owned data naturally scoped.
+
+## 2.4 Security
+
+Never leave production Firestore in open test mode.
+
+The supplied Firebase guide explicitly recommends setting proper Firestore security
+rules before production and not committing API keys/secrets to Git.
+
+Example conceptual rule:
+
+```text
+User can read/write only their own documents.
+```
+
+## 2.5 SQFLite schema
+
+Create local tables for:
+
+```text
 tasks
+projects
 events
 notes
 habits
 expenses
-health_logs
-notifications
-ai_conversations
-documents
-community_posts
-messages
+sync_queue
 ```
 
-Every user-owned document should contain an appropriate `userId` or be stored under a user-specific path.
+## 2.6 Repository interfaces
+
+Example:
+
+```dart
+abstract class TaskRepository {
+  Future<List<Task>> getTasks();
+  Future<Task> createTask(Task task);
+  Future<void> updateTask(Task task);
+  Future<void> deleteTask(String id);
+  Future<void> completeTask(String id);
+}
+```
+
+Then implementations:
+
+```text
+TaskRepository
+     │
+     ├── LocalTaskDataSource
+     └── FirebaseTaskDataSource
+```
+
+## Deliverable
+
+Backend/data foundation + database schemas + repository contracts.
 
 ---
 
-# 22. Flutter Architecture
+# PHASE 3 — Flutter Application Foundation
 
-Recommended structure:
+## Objective
+
+Build the reusable Flutter layer before implementing all screens.
+
+## Create
 
 ```text
 lib/
-│
-├── main.dart
-│
 ├── app/
 │   ├── app.dart
 │   ├── routes/
@@ -768,14 +439,18 @@ lib/
 ├── core/
 │   ├── constants/
 │   ├── errors/
+│   ├── extensions/
 │   ├── utils/
 │   └── services/
 │
 ├── data/
 │   ├── models/
-│   ├── local/
-│   ├── remote/
+│   ├── datasources/
 │   └── repositories/
+│
+├── domain/
+│   ├── entities/
+│   └── usecases/
 │
 ├── features/
 │   ├── auth/
@@ -784,352 +459,182 @@ lib/
 │   ├── calendar/
 │   ├── notes/
 │   ├── habits/
-│   ├── expenses/
-│   ├── health/
-│   ├── ai/
+│   ├── finance/
+│   ├── wellness/
 │   ├── analytics/
+│   ├── ai/
 │   ├── maps/
-│   ├── notifications/
-│   ├── profile/
-│   └── settings/
+│   ├── sensors/
+│   └── media/
 │
 └── shared/
     ├── widgets/
     ├── dialogs/
-    └── components/
+    └── animations/
 ```
 
-Use feature-based organization so individual modules can evolve independently.
+## Build design system
 
----
+Create:
 
-# 23. State Management
-
-Use **GetX** for the academic project because it is relatively straightforward to demonstrate.
-
-Suggested controllers:
-
-```text
-AuthController
-HomeController
-TaskController
-CalendarController
-NotesController
-HabitController
-ExpenseController
-AIController
-NotificationController
-ProfileController
-```
-
-For each feature:
-
-```text
-UI
- ↓
-Controller
- ↓
-Repository
- ↓
-Local / Remote Data Source
-```
-
----
-
-# 24. UI Design System
-
-## Brand
-
-OmniLife:
-
-**Indigo + Teal**
-
-AI:
-
-**Violet**
-
-## Light Mode
-
-```text
-Background       #F8F9FC
-Surface          #FFFFFF
-Primary          #6366F1
-Primary Dark     #4F46E5
-Secondary        #14B8A6
-AI               #8B5CF6
-Text             #111827
-Secondary Text   #64748B
-Border           #E2E8F0
-Success          #22C55E
-Warning          #F59E0B
-Error            #EF4444
-```
-
-## Dark Mode
-
-```text
-Background       #0F172A
-Surface          #1E293B
-Elevated         #273449
-Primary          #818CF8
-Primary Dark     #6366F1
-Secondary        #2DD4BF
-AI               #A78BFA
-Text             #F8FAFC
-Secondary Text   #94A3B8
-Border           #334155
-Success          #4ADE80
-Warning          #FBBF24
-Error            #F87171
-```
-
-Use AI gradient sparingly:
-
-```text
-#6366F1 → #8B5CF6
-```
-
----
-
-# 25. MVP Scope
-
-Do NOT implement every feature immediately.
-
-## MVP — Phase 1
-
-Focus on Flutter fundamentals.
-
-### Implement
-
-- Splash
-- Onboarding
-- Login/Register UI
-- Home Dashboard
-- Tasks
-- Notes
-- Calendar
-- Profile
-- Settings
-- Light/Dark Theme
-- Bottom Navigation
-- Navigation Drawer
-- Mock data
-- Forms
+- Colors
+- Typography
+- Spacing
+- Radius
+- Shadows
+- Buttons
+- Cards
+- Text fields
+- Chips
 - Dialogs
-- Search
-- Basic state management
+- Bottom sheets
+- Empty states
+- Loading states
+- Error states
 
-### Main navigation
+## Flutter concepts deliberately demonstrated
+
+- MaterialApp
+- Scaffold
+- AppBar
+- FAB
+- Container
+- Row
+- Column
+- Stack
+- ListView
+- ListTile
+- GridView
+- GestureDetector
+- InkWell
+- TextField
+- Navigator/routes
+- Dialogs
+- StatelessWidget
+- StatefulWidget
+- Themes
+
+## Deliverable
+
+Professional application shell with reusable components.
+
+---
+
+# PHASE 4 — FIRST VERTICAL SLICE
+
+This phase is extremely important.
+
+Do not move forward until this works end-to-end.
+
+## Implement
 
 ```text
+Register
+  ↓
+Firebase Authentication
+  ↓
+Create user profile
+  ↓
 Home
-Tasks
-Calendar
-Notes
-Profile
+  ↓
+Create Task
+  ↓
+GetX Controller
+  ↓
+Task Repository
+  ↓
+SQFLite
+  ↓
+Firebase Firestore
+  ↓
+Task appears on dashboard
 ```
 
----
-
-# 26. Phase 2
-
-Focus on advanced Flutter and networking.
-
-### Add
-
-- AI Assistant
-- AI Task Creation
-- AI Note Summarization
-- REST API
-- Weather
-- News
-- JSON parsing
-- Expense module
-- Habit module
-- Charts
-- GetX
-- Push notifications
-- Animations
-
----
-
-# 27. Phase 3
-
-Focus on Unit III.
-
-### Add
-
-- Firebase Authentication
-- Firestore
-- Firebase Storage
-- SQFLite
-- Offline mode
-- Cloud synchronization
-- Google Maps
-- GPS
-- Sensors
-- Device permissions
-- Testing
-- Release build
-- Deployment
-
----
-
-# 28. Syllabus Mapping
-
-| Syllabus Topic | OmniLife Feature |
-|---|---|
-| Dart | Entire application |
-| Widgets | All screens |
-| MaterialApp | App root |
-| Scaffold | Main screens |
-| AppBar | All modules |
-| FAB | Add Task/Note/Event |
-| Text | All UI |
-| Center/Padding | Layout |
-| Container | Cards/UI |
-| Images | Profile/Documents |
-| Network Images | News |
-| Icons | Navigation |
-| Row/Column | Layout |
-| ListView | Tasks/Notes |
-| ListTile | Tasks/Events |
-| Gesture Detection | Task/Note actions |
-| InkWell | Cards/buttons |
-| Stateless/Stateful | Screens/widgets |
-| State Management | GetX |
-| Navigator/Routes | App navigation |
-| TextField | Forms/Search |
-| Themes | Light/Dark |
-| Custom Fonts | Design system |
-| GridView | Quick Actions/Categories |
-| Stack | Dashboard/overlays |
-| AlertDialog | Delete/confirmation |
-| Chips | Categories/tags |
-| Date Picker | Tasks/Events |
-| Time Picker | Tasks/Events |
-| Future | API/Firebase operations |
-| Async/Await | API/database |
-| HTTP | Weather/News/AI |
-| REST API | External services |
-| Model Class | API/Firebase models |
-| JSON Parsing | API responses |
-| Remote Data | News/Weather |
-| BLoC/GetX | GetX state management |
-| Charts | Analytics |
-| Push Notifications | Reminders |
-| Animations | UI transitions |
-| Firebase | Auth/Cloud |
-| SQFLite | Offline storage |
-| InfluxDB | Optional sensor/time-series data |
-| MongoDB | Optional custom backend |
-| Maps | Location services |
-| GPS | Current/nearby location |
-| Sensors | Activity features |
-| Testing | Unit/widget/integration tests |
-| Deployment | Android release |
-
----
-
-# 29. MVP User Flow
+Then:
 
 ```text
-Splash
-  ↓
-Onboarding
-  ↓
-Login / Register
-  ↓
-Home Dashboard
-  │
-  ├── Tasks
-  │    ├── Task List
-  │    ├── Create Task
-  │    └── Task Details
-  │
-  ├── Calendar
-  │    ├── Calendar View
-  │    ├── Create Event
-  │    └── Event Details
-  │
-  ├── Notes
-  │    ├── Notes List
-  │    ├── Create Note
-  │    └── Note Details
-  │
-  └── Profile
-       ├── Settings
-       ├── Theme
-       └── About
+Internet OFF
+    ↓
+Create Task
+    ↓
+SQFLite
+    ↓
+Task remains available
+    ↓
+Internet ON
+    ↓
+Sync queue
+    ↓
+Firestore
 ```
+
+## Why this phase exists
+
+It validates the most important architectural assumption before you build ten modules.
+
+If this works, the rest of OmniLife becomes controlled repetition rather than
+architectural guessing.
+
+## Deliverable
+
+One production-quality vertical feature.
 
 ---
 
-# 30. Extended User Flow
+# PHASE 5 — PRODUCTIVITY CORE
 
-```text
-                         ┌─────────────┐
-                         │   Splash    │
-                         └──────┬──────┘
-                                ↓
-                         ┌─────────────┐
-                         │ Onboarding  │
-                         └──────┬──────┘
-                                ↓
-                      ┌──────────────────┐
-                      │ Login / Register │
-                      └────────┬─────────┘
-                               ↓
-                    ┌─────────────────────┐
-                    │   HOME DASHBOARD    │
-                    └──────────┬──────────┘
-                               │
-       ┌────────────┬──────────┼───────────┬────────────┐
-       ↓            ↓          ↓           ↓            ↓
-     Tasks       Calendar     Notes      Habits      Expenses
-       │            │          │           │            │
-       └────────────┴──────────┼───────────┴────────────┘
-                               ↓
-                         ┌─────────────┐
-                         │     AI      │
-                         │  Assistant  │
-                         └──────┬──────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              ↓                 ↓                 ↓
-          Tasks/Actions       Notes           Analytics
-              │                 │                 │
-              └─────────────────┼─────────────────┘
-                                ↓
-                         Notifications
-                                ↓
-                         User Activity
-                                ↓
-                          Analytics
-```
+Build the three most important modules.
 
----
+## 5.1 Tasks
 
-# 31. Key Product Principle
+Features:
 
-OmniLife should NOT feel like:
+- CRUD
+- Priority
+- Due date/time
+- Reminder
+- Category
+- Tags
+- Subtasks
+- Search
+- Filter
+- Sort
+- Completion
+- Recurrence
 
-> "15 unrelated features inside one application."
+## 5.2 Calendar
 
-It should feel like:
+Features:
 
-> **"One personal operating system where different parts of life are connected."**
+- Month
+- Week
+- Day agenda
+- Event CRUD
+- Date picker
+- Time picker
+- Recurrence
+- Reminder
+- Location
 
-The strongest cross-module workflows are:
+## 5.3 Notes
 
-### Workflow 1 — Note to Task
+Features:
+
+- CRUD
+- Tags
+- Categories
+- Pin
+- Archive
+- Search
+- Attach image/file
+- Checklist
+
+## Cross-module workflows
 
 ```text
 Note
  ↓
-AI extracts action items
- ↓
-User confirms
+Action items
  ↓
 Tasks
  ↓
@@ -1138,47 +643,871 @@ Calendar
 Reminder
 ```
 
-### Workflow 2 — Smart Planning
+and:
 
 ```text
-User Request
+Task deadline
  ↓
-AI
+Calendar
  ↓
-Tasks + Calendar + Existing Commitments
- ↓
-Suggested Schedule
- ↓
-User Confirmation
+Dashboard
 ```
 
-### Workflow 3 — Personal Insights
+## Deliverable
 
-```text
-Tasks + Habits + Expenses + Calendar
-                    ↓
-                 AI/Analytics
-                    ↓
-              Weekly Insight
-```
-
-These workflows should become the defining feature of OmniLife.
+OmniLife becomes a genuinely usable productivity application.
 
 ---
 
-# 32. PoC Success Criteria
+# PHASE 6 — PERSONAL LIFE MODULES
 
-The PoC should demonstrate that:
+## 6.1 Habits
 
-- A user can navigate through the application.
-- A user can create and manage tasks.
-- A user can create and manage notes.
-- A user can view and create calendar events.
-- The dashboard summarizes user activity.
-- Modules use shared data concepts.
-- The application supports Light/Dark mode.
-- The architecture is ready for Firebase and SQFLite.
-- AI can later interact with tasks and notes.
-- The application can be expanded in Phase 2 and Phase 3 without redesigning the entire codebase.
+- Habit CRUD
+- Frequency
+- Streak
+- Calendar history
+- Completion percentage
+- Goals
 
-The PoC is successful when the application demonstrates the **architecture and core user experience**, not when every planned feature has been implemented.
+## 6.2 Finance
+
+- Income
+- Expenses
+- Categories
+- Budgets
+- Recurring expenses
+- Monthly summaries
+
+## 6.3 Wellness
+
+- Water
+- Sleep
+- Exercise
+- Mood
+- Wellness goals
+
+Keep wellness non-medical.
+
+## 6.4 Dashboard
+
+Combine:
+
+```text
+Tasks
+Calendar
+Habits
+Finance
+Wellness
+```
+
+into one daily overview.
+
+## Deliverable
+
+OmniLife now represents a connected personal life system.
+
+---
+
+# PHASE 7 — AI LIFE COPILOT
+
+Only start this after the underlying data models work.
+
+## 7.1 AI provider abstraction
+
+Do not hardcode the application around one provider.
+
+```dart
+abstract class AIProvider {
+  Future<AIResponse> generate(AIRequest request);
+}
+```
+
+Implement:
+
+```text
+GeminiProvider
+GroqProvider
+```
+
+The application should be able to switch provider through configuration.
+
+## 7.2 AI service
+
+```text
+AIController
+    ↓
+AIService
+    ↓
+AIProvider
+```
+
+## 7.3 Tool system
+
+Define tools:
+
+```text
+create_task
+update_task
+complete_task
+create_event
+create_note
+create_habit
+add_expense
+search_notes
+get_today_schedule
+get_productivity_summary
+```
+
+## 7.4 AI flow
+
+```text
+User
+ ↓
+AI Chat
+ ↓
+Intent
+ ↓
+Tool selection
+ ↓
+Tool arguments
+ ↓
+Validation
+ ↓
+User confirmation
+ ↓
+Repository
+ ↓
+Database
+```
+
+AI must not blindly modify important user data.
+
+## 7.5 AI features
+
+### Ask OmniLife
+
+General conversational assistant.
+
+### Plan My Day
+
+Uses:
+
+- Tasks
+- Calendar
+- Deadlines
+- Available time
+
+### Note Summarizer
+
+### Note → Tasks
+
+### AI Study Assistant
+
+- Explain
+- Summarize
+- Quiz
+- Flashcards
+
+### Weekly Life Review
+
+Uses:
+
+- Productivity
+- Habits
+- Expenses
+- Calendar
+
+## Deliverable
+
+AI that interacts with the application rather than a standalone chatbot.
+
+---
+
+# PHASE 8 — DEVICE + CLOUD FEATURES
+
+Now implement the remaining syllabus-heavy mobile features.
+
+## 8.1 Firebase Cloud Messaging
+
+Use for:
+
+- Task reminders
+- Habit reminders
+- Calendar reminders
+- AI weekly review
+
+The supplied Firebase guide includes FCM permission/token setup, foreground
+listeners and a top-level background message handler.
+
+Test notifications on a real Android device.
+
+## 8.2 Cloud Storage
+
+Use for:
+
+- Profile image
+- Note attachments
+- Document attachments
+
+## 8.3 Realtime Database
+
+Use for:
+
+- Real-time AI conversation status
+- Presence/status if needed
+- Real-time activity stream
+
+Do not use it for everything; Firestore remains the primary application database.
+
+## 8.4 Maps + GPS
+
+Implement:
+
+- Current location
+- Location picker
+- Event location
+- Nearby places
+- Distance
+
+## 8.5 Sensors
+
+Implement one meaningful use case:
+
+```text
+Sensor data
+ ↓
+Focus/activity tracking
+ ↓
+Local processing
+ ↓
+InfluxDB
+ ↓
+Analytics
+```
+
+## 8.6 Media
+
+Build:
+
+### Focus Mode
+
+- Music playback
+- Video playback
+- Play/pause
+- Seek
+- Timer
+- Session completion
+
+This gives the Unit II media requirements a real purpose.
+
+---
+
+# PHASE 9 — MongoDB + InfluxDB + Analytics
+
+## MongoDB
+
+Do not duplicate Firebase.
+
+Use MongoDB for:
+
+```text
+AI conversations
+AI tool execution logs
+Flexible AI context metadata
+```
+
+Architecture:
+
+```text
+Flutter
+ ↓
+Backend API
+ ↓
+MongoDB
+```
+
+## InfluxDB
+
+Use for time-series information:
+
+```text
+sensor readings
+focus sessions
+activity
+wellness measurements
+```
+
+## Analytics dashboard
+
+Build:
+
+- Task completion trend
+- Habit consistency
+- Expense trend
+- Focus sessions
+- Wellness trend
+
+Use:
+
+- Line charts
+- Bar charts
+- Pie/donut charts
+- Progress indicators
+
+## Deliverable
+
+A real analytics system with a justified database architecture.
+
+---
+
+# PHASE 10 — ADVANCED FLUTTER
+
+This phase exists specifically to showcase Flutter skill.
+
+## BLoC
+
+Use BLoC for AI conversation/remote dashboard.
+
+Example:
+
+```text
+AIEvent
+ ↓
+Bloc
+ ↓
+AIState
+
+Initial
+Loading
+Streaming
+Success
+Error
+```
+
+## GetX
+
+Use for application-level state:
+
+- Auth
+- Tasks
+- Notes
+- Theme
+- Profile
+
+## Isolates
+
+Use `compute()` / isolates for:
+
+- Large JSON parsing
+- Analytics calculations
+- Sensor-data processing
+- Large local-search operations
+
+## Animations
+
+Implement deliberately:
+
+### Navigation
+
+- Fade
+- Slide
+- Shared-axis style transitions
+
+### Dashboard
+
+- Animated statistics
+- Progress animations
+
+### Tasks
+
+- Completion animation
+- Swipe actions
+
+### AI
+
+- Streaming text effect
+- Typing indicator
+
+### Habits
+
+- Streak animation
+
+### Charts
+
+- Animated entry
+
+### Global
+
+- Skeleton loading
+- Shimmer
+- Pull-to-refresh
+- Expand/collapse
+- Bottom-sheet transitions
+- Theme transitions
+
+## Deliverable
+
+The application should feel like a polished commercial mobile application.
+
+---
+
+# PHASE 11 — TESTING, SECURITY & PERFORMANCE
+
+Do not leave testing until the final day.
+
+## Unit tests
+
+Test:
+
+- Task use cases
+- Validators
+- AI tool parser
+- Expense calculations
+- Habit calculations
+- Repository behavior
+
+## Widget tests
+
+Test:
+
+- Login
+- Task creation
+- Task completion
+- Note creation
+- Theme switching
+
+## Integration tests
+
+Test:
+
+```text
+Register
+ ↓
+Login
+ ↓
+Create task
+ ↓
+Task appears
+ ↓
+Logout
+ ↓
+Login
+ ↓
+Task still exists
+```
+
+## Offline test
+
+```text
+Disable internet
+ ↓
+Create task
+ ↓
+Restart app
+ ↓
+Task exists
+ ↓
+Reconnect
+ ↓
+Firebase sync
+```
+
+## Security
+
+Verify:
+
+- Authentication required
+- Users cannot read another user's data
+- Storage access is controlled
+- API keys are not inside Git
+- Secrets are environment/backend controlled
+
+The supplied Firebase guide specifically warns against leaving Firestore in test mode
+and against committing API keys/secrets.
+
+## Crashlytics
+
+Intentionally test error reporting in a controlled development environment.
+
+## Analytics
+
+Track meaningful events:
+
+```text
+sign_up
+task_created
+task_completed
+note_created
+ai_query
+ai_tool_executed
+habit_completed
+expense_added
+focus_session_completed
+```
+
+## Performance
+
+Check:
+
+- Startup time
+- List rendering
+- Image loading
+- Database queries
+- AI response latency
+- Memory usage
+- Animation smoothness
+
+---
+
+# PHASE 12 — DEPLOYMENT + PLACEMENT POLISH
+
+## Android
+
+Produce:
+
+```text
+debug APK
+release APK
+release AAB
+```
+
+## App polish
+
+Add:
+
+- App icon
+- Splash screen
+- Proper permissions
+- Privacy information
+- Error messages
+- Empty states
+- Loading states
+- Offline indicator
+- Network retry
+- Accessibility labels
+
+## GitHub
+
+README should contain:
+
+1. Project overview
+2. Architecture diagram
+3. Screenshots
+4. Feature list
+5. Technology stack
+6. Firebase architecture
+7. AI architecture
+8. Database architecture
+9. Setup instructions
+10. Testing
+11. Demo video
+12. Future improvements
+
+---
+
+# 4. Recommended Development Order Inside Claude Code
+
+Claude Code should NOT be asked:
+
+> "Build the whole OmniLife application."
+
+That produces a large amount of unverified code.
+
+Instead use controlled implementation cycles.
+
+## Cycle
+
+```text
+1. Give Claude one feature
+2. Ask it to inspect existing architecture
+3. Implement
+4. Run formatter
+5. Run analyzer
+6. Run tests
+7. Run Flutter app
+8. Manually verify
+9. Commit
+10. Move to next feature
+```
+
+## Example prompt
+
+```text
+Implement the Task feature using the existing OmniLife architecture.
+
+Before coding:
+1. Inspect the current repository.
+2. Do not change architecture unnecessarily.
+3. Follow existing models, repositories and GetX patterns.
+4. Implement Task model, local datasource, Firebase datasource,
+   repository, controller and UI.
+5. Add loading/error/empty states.
+6. Add unit tests for the repository/use cases.
+7. Run dart format.
+8. Run flutter analyze.
+9. Run relevant tests.
+10. Report every changed file and any remaining issue.
+
+Do not implement unrelated features.
+```
+
+This is much safer than giving Claude a 500-line "build everything" prompt.
+
+---
+
+# 5. Definition of Done
+
+A feature is NOT finished merely because the screen appears.
+
+A feature is complete only when:
+
+```text
+UI
+✓
+State management
+✓
+Validation
+✓
+Repository
+✓
+Local persistence
+✓
+Cloud persistence where applicable
+✓
+Loading state
+✓
+Error state
+✓
+Empty state
+✓
+Offline behavior
+✓
+Tests
+✓
+Analytics event where appropriate
+✓
+Crash handling
+✓
+Animation/polish
+✓
+Manual device verification
+```
+
+---
+
+# 6. Three Milestones That Must Never Be Skipped
+
+## Milestone A — End of Phase 4
+
+You can:
+
+```text
+Register
+Login
+Create Task
+Save locally
+Save to Firebase
+Go offline
+Restart app
+Reconnect
+Sync
+```
+
+If this does not work, stop and fix architecture.
+
+## Milestone B — End of Phase 7
+
+You can say:
+
+> "OmniLife's AI can understand natural language and safely interact with the user's tasks, notes and calendar."
+
+## Milestone C — End of Phase 12
+
+You can say:
+
+> "This is a production-style Flutter application with Firebase,
+offline persistence, AI tool calling, REST APIs, multiple database
+technologies, device APIs, testing, analytics and deployment."
+
+---
+
+# 7. Syllabus Coverage Checklist
+
+## Unit I
+
+- [ ] Dart
+- [ ] MaterialApp
+- [ ] Scaffold
+- [ ] AppBar
+- [ ] FAB
+- [ ] Text
+- [ ] Center
+- [ ] Padding
+- [ ] Hot reload/restart
+- [ ] Containers
+- [ ] Asset images
+- [ ] Network images
+- [ ] Icons
+- [ ] Row/Column
+- [ ] ListView
+- [ ] ListTile
+- [ ] GestureDetector
+- [ ] InkWell
+- [ ] Stateless widgets
+- [ ] Stateful widgets
+- [ ] State management
+- [ ] Navigator/routes
+- [ ] TextField
+- [ ] Themes
+- [ ] Custom fonts
+- [ ] GridView
+- [ ] Stack
+- [ ] AlertDialog
+
+## Unit II
+
+- [ ] Advanced widgets
+- [ ] Chips
+- [ ] Video
+- [ ] Music
+- [ ] Date picker
+- [ ] Time picker
+- [ ] Future
+- [ ] async
+- [ ] await
+- [ ] HTTP
+- [ ] REST API
+- [ ] Model classes
+- [ ] JSON parsing
+- [ ] Remote data
+- [ ] BLoC
+- [ ] GetX
+- [ ] Charts
+- [ ] Push notifications
+- [ ] Animations
+
+## Unit III
+
+- [ ] Firebase
+- [ ] SQFLite
+- [ ] InfluxDB
+- [ ] MongoDB
+- [ ] Maps
+- [ ] GPS
+- [ ] Sensors
+- [ ] Testing
+- [ ] Deployment
+- [ ] Multithreading/isolate processing
+
+---
+
+# 8. Final Product Structure
+
+The final application navigation should look approximately like:
+
+```text
+Splash
+ ↓
+Onboarding
+ ↓
+Authentication
+ ↓
+HOME
+ ├── AI Copilot
+ ├── Tasks
+ │    └── Projects
+ ├── Calendar
+ ├── Notes
+ ├── Habits
+ ├── Finance
+ ├── Wellness
+ ├── Analytics
+ ├── Focus Mode
+ │    ├── Music
+ │    └── Video
+ ├── Maps
+ │    └── GPS
+ └── Profile
+      └── Settings
+```
+
+---
+
+# 9. Final Engineering Philosophy
+
+OmniLife should demonstrate three things simultaneously:
+
+## 1. Flutter skill
+
+```text
+Widgets
+Layouts
+Animations
+State
+Navigation
+Forms
+Charts
+Media
+Device APIs
+Performance
+```
+
+## 2. Mobile engineering skill
+
+```text
+Offline-first
+Local database
+Cloud synchronization
+Notifications
+Permissions
+GPS
+Sensors
+Testing
+Deployment
+```
+
+## 3. Modern software engineering
+
+```text
+Clean architecture
+Repositories
+Dependency boundaries
+AI tool calling
+Backend APIs
+Firebase
+MongoDB
+InfluxDB
+Security
+Observability
+CI/CD-ready Git workflow
+```
+
+The project should therefore be judged by:
+
+> **How well the parts work together**, not by how many screens exist.
+
+The central demonstration should always be:
+
+```text
+USER
+ ↓
+Flutter UI
+ ↓
+State Management
+ ↓
+Use Case
+ ↓
+Repository
+ ↓
+Local / Cloud Data
+ ↓
+AI / External Service
+ ↓
+Result
+ ↓
+UI Update
+```
+
+That is the architecture that turns OmniLife from a college CRUD project into a
+placement-level Flutter engineering project.
