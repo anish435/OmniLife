@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "omnilife-web",
+      "runtimeExecutable": "C:\\Users\\LAKSHMI NARAYANA\\Desktop\\MAD\\flutter\\bin\\flutter.bat",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8765"],
+      "port": 8765
+    }
+  ]
+}
