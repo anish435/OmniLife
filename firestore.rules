@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Development-baseline security rules for the OmniLife Firestore data
+// model documented in docs/architecture.md §5 (Firestore ownership model).
+//
+// Rule: a signed-in user may only read/write documents under their own
+// users/{uid} subtree. Nothing else is permitted.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /{collection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
