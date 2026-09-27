@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../presentation/controllers/app_controller.dart';
+import '../../presentation/controllers/auth_controller.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -14,6 +15,8 @@ class InitialBinding extends Bindings {
   @override
   void dependencies() {
     Get.put(AppController(), permanent: true);
+    // Must be registered before AuthController, which resolves it eagerly.
     Get.lazyPut<AuthRepository>(() => AuthRepositoryImpl());
+    Get.put(AuthController(), permanent: true);
   }
 }
