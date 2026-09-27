@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color palette. Widgets should read colors from the active
-/// [ThemeData] (via `Theme.of(context)`), not from this class directly —
-/// this is where the palette is *defined*, once.
+/// Centralized color roles.
+///
+/// Deliberately a calm slate-blue/graphite palette — no purple/violet
+/// "AI" hues. Standard Material roles (primary, secondary, surface,
+/// error, ...) are consumed via `Theme.of(context).colorScheme`, built
+/// from these constants in [AppTheme]. Semantic roles Material doesn't
+/// model (muted text, success/warning/info) live in [AppSemanticColors].
 abstract final class AppColors {
-  static const Color primary = Color(0xFF3F51B5);
-  static const Color secondary = Color(0xFF03A9F4);
+  // Brand — a calm slate blue, not indigo/violet.
+  static const primary = Color(0xFF2F5F86);
+  static const secondary = Color(0xFF5C7A8A);
 
-  static const Color lightBackground = Color(0xFFF7F8FA);
-  static const Color lightSurface = Colors.white;
+  // Light surfaces
+  static const lightBackground = Color(0xFFF5F6F8);
+  static const lightSurface = Color(0xFFFFFFFF);
+  static const lightSurfaceElevated = Color(0xFFEEF1F4);
+  static const lightBorder = Color(0xFFDADFE3);
+  static const lightText = Color(0xFF1B1F23);
 
-  static const Color darkBackground = Color(0xFF121316);
-  static const Color darkSurface = Color(0xFF1E1F23);
+  // Dark surfaces — near-black neutral graphite, not "black + accent".
+  static const darkBackground = Color(0xFF15181C);
+  static const darkSurface = Color(0xFF1D2126);
+  static const darkSurfaceElevated = Color(0xFF262B32);
+  static const darkBorder = Color(0xFF33383F);
+  static const darkText = Color(0xFFE7EAED);
 
-  static const Color error = Color(0xFFB3261E);
+  static const error = Color(0xFFB3261E);
+  static const errorDark = Color(0xFFE5867E);
 }

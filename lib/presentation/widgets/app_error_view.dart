@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_spacing.dart';
+
 /// Standard error placeholder, used wherever a screen needs to surface a
 /// failure with an optional retry action.
 class AppErrorView extends StatelessWidget {
@@ -17,16 +19,16 @@ class AppErrorView extends StatelessWidget {
           Icon(
             Icons.error_outline,
             color: Theme.of(context).colorScheme.error,
-            size: 40,
+            size: 36,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           if (onRetry != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ],

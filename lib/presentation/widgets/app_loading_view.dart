@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_spacing.dart';
+
 /// Standard loading placeholder, used wherever a screen is waiting on
 /// async work. Keeps loading UI consistent across features.
 class AppLoadingView extends StatelessWidget {
@@ -15,7 +17,7 @@ class AppLoadingView extends StatelessWidget {
         children: [
           const CircularProgressIndicator(),
           if (message != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(message!, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ],

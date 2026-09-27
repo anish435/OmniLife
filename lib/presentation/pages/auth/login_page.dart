@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
+import '../../../app/theme/app_spacing.dart';
 import '../../../core/utils/validators.dart';
 import '../../controllers/auth_controller.dart';
 
@@ -50,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
             child: Form(
               key: _formKey,
               child: Column(
@@ -60,34 +61,34 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     'OmniLife',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.displaySmall,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     'Sign in to continue',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.section),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: 'Email'),
                     validator: Validators.email,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(labelText: 'Password'),
                     validator: Validators.password,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                   Obx(() {
                     final error = _authController.errorMessage.value;
                     if (error == null) return const SizedBox.shrink();
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text(
                         error,
                         style: TextStyle(
@@ -110,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                           : const Text('Login'),
                     );
                   }),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextButton(
                     onPressed: () {
                       _authController.clearError();

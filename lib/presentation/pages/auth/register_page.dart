@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
+import '../../../app/theme/app_spacing.dart';
 import '../../../core/utils/validators.dart';
 import '../../controllers/auth_controller.dart';
 
@@ -52,7 +53,7 @@ class _RegisterPageState extends State<RegisterPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
             child: Form(
               key: _formKey,
               child: Column(
@@ -65,14 +66,14 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: const InputDecoration(labelText: 'Email'),
                     validator: Validators.email,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(labelText: 'Password'),
                     validator: Validators.password,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
@@ -84,12 +85,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       _passwordController.text,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                   Obx(() {
                     final error = _authController.errorMessage.value;
                     if (error == null) return const SizedBox.shrink();
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: Text(
                         error,
                         style: TextStyle(
@@ -112,7 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           : const Text('Register'),
                     );
                   }),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextButton(
                     onPressed: () {
                       _authController.clearError();
