@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/utils/validators.dart';
 import '../../controllers/auth_controller.dart';
+import '../../widgets/google_sign_in_button.dart';
 
 /// Registration screen. Submits through [AuthController]; successful
 /// registration transitions the app to the authenticated state.
@@ -111,6 +112,53 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Register'),
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.3),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: Text(
+                          'OR',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Obx(() {
+                    final googleLoading = _authController.isGoogleLoading.value;
+                    return GoogleSignInButton(
+                      isLoading: googleLoading,
+                      onPressed: _authController.isLoading.value
+                          ? null
+                          : () {
+                              _authController.clearError();
+                              _authController.signInWithGoogle();
+                            },
                     );
                   }),
                   const SizedBox(height: AppSpacing.sm),

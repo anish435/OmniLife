@@ -84,6 +84,8 @@ class AuthController extends GetxController {
     } catch (_) {}
   }
 
+  final isGoogleLoading = false.obs;
+
   Future<void> register({required String email, required String password}) =>
       _runAuthAction(
         () => _authRepository!.register(email: email, password: password),
@@ -94,12 +96,39 @@ class AuthController extends GetxController {
         () => _authRepository!.login(email: email, password: password),
       );
 
+  Future<void> signInWithGoogle() async {
+    if (_authRepository == null) {
+      errorMessage.value =
+          'Authentication is unavailable: Firebase has not been configured '
+          'for this environment.';
+      return;
+    }
+    errorMessage.value = null;
+    isGoogleLoading.value = true;
+    try {
+      await _authRepository!.signInWithGoogle();
+    } on AuthFailure catch (e) {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'canceled' ||
+          e.code == 'cancelled-popup-request' ||
+          e.code == 'ERROR_ABORTED_BY_USER') {
+        return;
+      }
+      errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value = 'Something went wrong. Please try again.';
+    } finally {
+      isGoogleLoading.value = false;
+    }
+  }
+
   Future<void> logout() async {
     if (_authRepository == null) return;
     await _authRepository!.logout();
   }
 
   void clearError() => errorMessage.value = null;
+
 
   Future<void> _runAuthAction(Future<void> Function() action) async {
     if (_authRepository == null) {

@@ -49,10 +49,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AppUser> signInWithGoogle() async {
+    try {
+      final user = await _dataSource.signInWithGoogle();
+      return _toAppUser(user)!;
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthFailure(e.message ?? 'Google sign-in failed.', code: e.code);
+    }
+  }
+
+  @override
   Future<void> logout() => _dataSource.logout();
 
   AppUser? _toAppUser(fb.User? user) {
     if (user == null) return null;
-    return AppUser(uid: user.uid, email: user.email);
+    return AppUser(
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoUrl: user.photoURL,
+    );
   }
 }

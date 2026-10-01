@@ -12,6 +12,7 @@ class FakeAuthRepository implements AuthRepository {
 
   Object? failureToThrowOnRegister;
   Object? failureToThrowOnLogin;
+  Object? failureToThrowOnGoogle;
 
   void emit(AppUser? user) {
     _current = user;
@@ -47,6 +48,18 @@ class FakeAuthRepository implements AuthRepository {
   }) async {
     if (failureToThrowOnLogin != null) throw failureToThrowOnLogin!;
     final user = AppUser(uid: 'uid', email: email);
+    emit(user);
+    return user;
+  }
+
+  @override
+  Future<AppUser> signInWithGoogle() async {
+    if (failureToThrowOnGoogle != null) throw failureToThrowOnGoogle!;
+    const user = AppUser(
+      uid: 'google-uid',
+      email: 'user@gmail.com',
+      displayName: 'Google User',
+    );
     emit(user);
     return user;
   }
@@ -136,6 +149,58 @@ void main() {
 
     await controller.logout();
     await Future<void>.delayed(Duration.zero);
+    expect(controller.status.value, AuthStatus.unauthenticated);
+
+    fake.dispose();
+  });
+
+  test('successful signInWithGoogle clears error and reaches authenticated', () async {
+    final fake = FakeAuthRepository();
+    final controller = AuthController(authRepository: fake);
+    controller.onInit();
+
+    await controller.signInWithGoogle();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.errorMessage.value, isNull);
+    expect(controller.status.value, AuthStatus.authenticated);
+    expect(controller.currentUser.value?.email, 'user@gmail.com');
+
+    fake.dispose();
+  });
+
+  test('signInWithGoogle handles cancellation without setting error message', () async {
+    final fake = FakeAuthRepository()
+      ..failureToThrowOnGoogle = const AuthFailure(
+        'Sign in was canceled',
+        code: 'popup-closed-by-user',
+      );
+    final controller = AuthController(authRepository: fake);
+    controller.onInit();
+
+    await controller.signInWithGoogle();
+
+    expect(controller.errorMessage.value, isNull);
+    expect(controller.status.value, AuthStatus.unauthenticated);
+
+    fake.dispose();
+  });
+
+  test('signInWithGoogle surfaces non-canceled failure', () async {
+    final fake = FakeAuthRepository()
+      ..failureToThrowOnGoogle = const AuthFailure(
+        'Network error during Google sign in',
+        code: 'network-request-failed',
+      );
+    final controller = AuthController(authRepository: fake);
+    controller.onInit();
+
+    await controller.signInWithGoogle();
+
+    expect(
+      controller.errorMessage.value,
+      'Network error during Google sign in',
+    );
     expect(controller.status.value, AuthStatus.unauthenticated);
 
     fake.dispose();

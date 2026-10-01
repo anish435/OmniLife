@@ -45,4 +45,16 @@ void main() {
 
     expect(find.text('Enter a valid email address'), findsOneWidget);
   });
+
+  testWidgets('renders Continue with Google button and triggers sign in', (tester) async {
+    final fake = FakeAuthRepository();
+    await pumpLoginPage(tester, fake);
+
+    expect(find.text('Continue with Google'), findsOneWidget);
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pump();
+
+    final controller = Get.find<AuthController>();
+    expect(controller.status.value, AuthStatus.authenticated);
+  });
 }

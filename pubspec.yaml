@@ -41,6 +41,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   sqflite: ^2.4.4
   path: ^1.9.1
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:

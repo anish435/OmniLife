@@ -3,10 +3,17 @@
 /// Kept separate from any Firebase type so domain/presentation code never
 /// depends on `firebase_auth` directly.
 class AppUser {
-  const AppUser({required this.uid, this.email});
+  const AppUser({
+    required this.uid,
+    this.email,
+    this.displayName,
+    this.photoUrl,
+  });
 
   final String uid;
   final String? email;
+  final String? displayName;
+  final String? photoUrl;
 }
 
 /// Domain-facing contract for authentication.
@@ -25,5 +32,8 @@ abstract class AuthRepository {
 
   Future<AppUser> login({required String email, required String password});
 
+  Future<AppUser> signInWithGoogle();
+
   Future<void> logout();
 }
+
