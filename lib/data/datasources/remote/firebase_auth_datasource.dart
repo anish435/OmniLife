@@ -10,10 +10,13 @@ class FirebaseAuthDataSource {
     fb.FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
   })  : _firebaseAuth = firebaseAuth ?? fb.FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        _injectedGoogleSignIn = googleSignIn;
 
   final fb.FirebaseAuth _firebaseAuth;
-  final GoogleSignIn _googleSignIn;
+  final GoogleSignIn? _injectedGoogleSignIn;
+
+  GoogleSignIn get _googleSignIn =>
+      _injectedGoogleSignIn ?? GoogleSignIn();
 
   Stream<fb.User?> authStateChanges() => _firebaseAuth.authStateChanges();
 

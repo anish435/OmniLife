@@ -59,3 +59,5 @@ lib/firebase_options.dart
 serviceAccountKey.json
 **/*serviceAccountKey*.json
 .firebase/
+firebase.json
+.firebaserc
