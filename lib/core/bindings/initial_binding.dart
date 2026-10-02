@@ -1,16 +1,17 @@
 import 'package:get/get.dart';
 
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/task_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/repositories/task_repository.dart';
 import '../../presentation/controllers/app_controller.dart';
 import '../../presentation/controllers/auth_controller.dart';
+import '../../presentation/controllers/task_controller.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
 /// Repositories are registered lazily ([Get.lazyPut]) so they are only
-/// constructed (and only then touch Firebase) the first time a feature
-/// actually asks for them — the app shell itself must be able to start
-/// even before Firebase is configured for this environment.
+/// constructed the first time a feature actually asks for them.
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
@@ -18,5 +19,8 @@ class InitialBinding extends Bindings {
     // Must be registered before AuthController, which resolves it eagerly.
     Get.lazyPut<AuthRepository>(() => AuthRepositoryImpl());
     Get.put(AuthController(), permanent: true);
+
+    Get.lazyPut<TaskRepository>(() => TaskRepositoryImpl());
+    Get.lazyPut<TaskController>(() => TaskController());
   }
 }

@@ -32,18 +32,44 @@ class TaskModel extends Task {
   }
 
   factory TaskModel.fromMap(Map<String, Object?> map) {
+    DateTime parseDate(Object? val, DateTime fallback) {
+      if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+      if (val is String) return DateTime.tryParse(val) ?? fallback;
+      return fallback;
+    }
+
+    DateTime? parseNullableDate(Object? val) {
+      if (val == null) return null;
+      if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+      if (val is String) return DateTime.tryParse(val);
+      return null;
+    }
+
+    final rawCompleted = map['completed'];
+    final completed = rawCompleted is bool
+        ? rawCompleted
+        : (rawCompleted is int ? rawCompleted == 1 : false);
+
+    final rawPriority = map['priority'];
+    TaskPriority priority = TaskPriority.medium;
+    if (rawPriority is String) {
+      try {
+        priority = TaskPriority.values.byName(rawPriority);
+      } catch (_) {}
+    }
+
+    final now = DateTime.now();
+
     return TaskModel(
-      id: map['id']! as String,
-      userId: map['user_id']! as String,
-      title: map['title']! as String,
+      id: (map['id'] ?? '') as String,
+      userId: ((map['user_id'] ?? map['userId']) ?? '') as String,
+      title: (map['title'] ?? '') as String,
       description: map['description'] as String?,
-      completed: (map['completed']! as int) == 1,
-      priority: TaskPriority.values.byName(map['priority']! as String),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']! as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at']! as int),
-      dueDate: map['due_date'] == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(map['due_date']! as int),
+      completed: completed,
+      priority: priority,
+      createdAt: parseDate(map['created_at'] ?? map['createdAt'], now),
+      updatedAt: parseDate(map['updated_at'] ?? map['updatedAt'], now),
+      dueDate: parseNullableDate(map['due_date'] ?? map['dueDate']),
     );
   }
 
@@ -58,6 +84,19 @@ class TaskModel extends Task {
       'due_date': dueDate?.millisecondsSinceEpoch,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
+    };
+  }
+
+  Map<String, dynamic> toFirestoreMap() {
+    return {
+      'userId': userId,
+      'title': title,
+      'description': description,
+      'completed': completed,
+      'priority': priority.name,
+      'dueDate': dueDate?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 }
