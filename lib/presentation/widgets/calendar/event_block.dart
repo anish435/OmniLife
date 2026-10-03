@@ -63,7 +63,7 @@ class _EventBlockState extends State<EventBlock> {
         scale: _isPressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Container(
-          height: widget.height,
+          height: h,
           decoration: BoxDecoration(
             color: tag.background(isDark),
             borderRadius: BorderRadius.circular(6),

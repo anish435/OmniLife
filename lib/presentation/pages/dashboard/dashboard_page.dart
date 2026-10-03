@@ -230,11 +230,26 @@ class DashboardPage extends StatelessWidget {
                 }
 
                 final tag = CalendarColors.getTag(nextEvent.colorTag);
-                final startH =
-                    nextEvent.startAt.hour.toString().padLeft(2, '0');
-                final startM =
-                    nextEvent.startAt.minute.toString().padLeft(2, '0');
                 final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                final now = DateTime.now();
+                final isToday = nextEvent.startAt.year == now.year &&
+                    nextEvent.startAt.month == now.month &&
+                    nextEvent.startAt.day == now.day;
+
+                String timeLabel;
+                if (isToday) {
+                  if (nextEvent.isAllDay) {
+                    timeLabel = 'All Day';
+                  } else {
+                    final startH = nextEvent.startAt.hour.toString().padLeft(2, '0');
+                    final startM = nextEvent.startAt.minute.toString().padLeft(2, '0');
+                    timeLabel = '$startH:$startM';
+                  }
+                } else {
+                  final monthShort = _monthNames[nextEvent.startAt.month - 1].substring(0, 3);
+                  timeLabel = '${nextEvent.startAt.day} $monthShort';
+                }
 
                 return AppSectionContainer(
                   title: 'Next up',
@@ -255,7 +270,7 @@ class DashboardPage extends StatelessWidget {
                           Container(width: 4, color: tag.color),
                           const SizedBox(width: 10),
                           Text(
-                            '$startH:$startM',
+                            timeLabel,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
