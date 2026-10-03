@@ -61,8 +61,12 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final appController = Get.find<AppController>();
     final authController = Get.find<AuthController>();
-    final taskController = Get.find<TaskController>();
-    final calendarController = Get.find<CalendarController>();
+    final taskController = Get.isRegistered<TaskController>()
+        ? Get.find<TaskController>()
+        : Get.put(TaskController(), permanent: true);
+    final calendarController = Get.isRegistered<CalendarController>()
+        ? Get.find<CalendarController>()
+        : Get.put(CalendarController(), permanent: true);
 
     final today = DateTime.now();
     final dateLabel =

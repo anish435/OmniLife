@@ -134,7 +134,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
     setState(() => _validationError = null);
     HapticFeedback.lightImpact();
 
-    final controller = Get.find<CalendarController>();
+    final controller = Get.isRegistered<CalendarController>()
+        ? Get.find<CalendarController>()
+        : Get.put(CalendarController(), permanent: true);
 
     if (widget.eventToEdit != null) {
       final updated = widget.eventToEdit!.copyWith(
@@ -171,7 +173,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
   Future<void> _delete() async {
     if (widget.eventToEdit == null) return;
     HapticFeedback.lightImpact();
-    final controller = Get.find<CalendarController>();
+    final controller = Get.isRegistered<CalendarController>()
+        ? Get.find<CalendarController>()
+        : Get.put(CalendarController(), permanent: true);
     await controller.deleteEvent(widget.eventToEdit!.id);
     Get.back();
   }

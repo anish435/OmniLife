@@ -26,7 +26,9 @@ class _TasksPageState extends State<TasksPage> {
   @override
   void initState() {
     super.initState();
-    _taskController = Get.find<TaskController>();
+    _taskController = Get.isRegistered<TaskController>()
+        ? Get.find<TaskController>()
+        : Get.put(TaskController(), permanent: true);
   }
 
   @override

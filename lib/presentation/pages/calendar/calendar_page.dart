@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../data/repositories/calendar_repository_impl.dart';
+import '../../../domain/repositories/calendar_repository.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../../domain/usecases/calendar/get_agenda_for_range.dart';
 import '../../widgets/calendar/calendar_day_cell.dart';
@@ -37,8 +39,18 @@ const _weekdayShortNames = [
   'SUN',
 ];
 
-class CalendarPage extends GetView<CalendarController> {
+class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
+
+  CalendarController get controller {
+    if (!Get.isRegistered<CalendarController>()) {
+      if (!Get.isRegistered<CalendarRepository>()) {
+        Get.lazyPut<CalendarRepository>(() => CalendarRepositoryImpl(), fenix: true);
+      }
+      return Get.put(CalendarController(), permanent: true);
+    }
+    return Get.find<CalendarController>();
+  }
 
   @override
   Widget build(BuildContext context) {

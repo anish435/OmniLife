@@ -22,8 +22,14 @@ class UserScopedFirestoreDataSource {
   }
 
   Future<List<Map<String, dynamic>>> list(String uid, String collection) async {
-    final snapshot = await _collection(uid, collection).get();
-    return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+    try {
+      final snapshot = await _collection(uid, collection)
+          .get()
+          .timeout(const Duration(milliseconds: 1500));
+      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> get(
@@ -31,9 +37,16 @@ class UserScopedFirestoreDataSource {
     String collection,
     String docId,
   ) async {
-    final doc = await _collection(uid, collection).doc(docId).get();
-    if (!doc.exists) return null;
-    return {'id': doc.id, ...?doc.data()};
+    try {
+      final doc = await _collection(uid, collection)
+          .doc(docId)
+          .get()
+          .timeout(const Duration(milliseconds: 1500));
+      if (!doc.exists) return null;
+      return {'id': doc.id, ...?doc.data()};
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> create(
@@ -41,7 +54,9 @@ class UserScopedFirestoreDataSource {
     String collection,
     Map<String, dynamic> data,
   ) async {
-    final ref = await _collection(uid, collection).add(data);
+    final ref = await _collection(uid, collection)
+        .add(data)
+        .timeout(const Duration(milliseconds: 1500));
     return ref.id;
   }
 
@@ -53,7 +68,8 @@ class UserScopedFirestoreDataSource {
   ) {
     return _collection(uid, collection)
         .doc(docId)
-        .set(data, SetOptions(merge: true));
+        .set(data, SetOptions(merge: true))
+        .timeout(const Duration(milliseconds: 1500));
   }
 
   Future<void> update(
@@ -62,10 +78,16 @@ class UserScopedFirestoreDataSource {
     String docId,
     Map<String, dynamic> data,
   ) {
-    return _collection(uid, collection).doc(docId).update(data);
+    return _collection(uid, collection)
+        .doc(docId)
+        .update(data)
+        .timeout(const Duration(milliseconds: 1500));
   }
 
   Future<void> delete(String uid, String collection, String docId) {
-    return _collection(uid, collection).doc(docId).delete();
+    return _collection(uid, collection)
+        .doc(docId)
+        .delete()
+        .timeout(const Duration(milliseconds: 1500));
   }
 }

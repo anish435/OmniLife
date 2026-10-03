@@ -72,7 +72,9 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     setState(() => _isSaving = true);
 
     try {
-      final controller = Get.find<TaskController>();
+      final controller = Get.isRegistered<TaskController>()
+          ? Get.find<TaskController>()
+          : Get.put(TaskController(), permanent: true);
 
       if (widget.taskToEdit != null) {
         final updated = widget.taskToEdit!.copyWith(
@@ -97,7 +99,21 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else if (Get.isDialogOpen == true || Get.isBottomSheetOpen == true) {
+          Get.back();
+        }
+      }
+    } catch (e, stack) {
+      debugPrint('CreateTaskSheet submit error: $e\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save task: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     } finally {
       if (mounted) {

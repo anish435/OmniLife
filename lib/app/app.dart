@@ -23,6 +23,7 @@ class OmniLifeApp extends StatelessWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: appController.themeMode.value,
+        initialBinding: InitialBinding(),
         initialRoute: AppPages.initial,
         getPages: AppPages.routes,
       ),

@@ -20,14 +20,14 @@ class InitialBinding extends Bindings {
   void dependencies() {
     Get.put(AppController(), permanent: true);
     // Must be registered before AuthController, which resolves it eagerly.
-    Get.lazyPut<AuthRepository>(() => AuthRepositoryImpl());
+    Get.lazyPut<AuthRepository>(() => AuthRepositoryImpl(), fenix: true);
     Get.put(AuthController(), permanent: true);
 
-    Get.lazyPut<TaskRepository>(() => TaskRepositoryImpl());
-    Get.lazyPut<TaskController>(() => TaskController());
+    Get.lazyPut<TaskRepository>(() => TaskRepositoryImpl(), fenix: true);
+    Get.put(TaskController(), permanent: true);
 
-    Get.lazyPut<CalendarRepository>(() => CalendarRepositoryImpl());
-    Get.lazyPut<CalendarController>(() => CalendarController());
+    Get.lazyPut<CalendarRepository>(() => CalendarRepositoryImpl(), fenix: true);
+    Get.put(CalendarController(), permanent: true);
   }
 }
 
