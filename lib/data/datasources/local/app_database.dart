@@ -11,11 +11,11 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
   static const tasksTable = 'tasks';
+  static const eventsTable = 'calendar_events';
 
-  static const _createTasksTableSql =
-      '''
+  static const _createTasksTableSql = '''
     CREATE TABLE $tasksTable (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -27,6 +27,28 @@ class AppDatabase {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
+  ''';
+
+  static const _createEventsTableSql = '''
+    CREATE TABLE $eventsTable (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      start_at INTEGER NOT NULL,
+      end_at INTEGER NOT NULL,
+      is_all_day INTEGER NOT NULL DEFAULT 0,
+      color_tag TEXT NOT NULL,
+      type TEXT NOT NULL,
+      linked_task_id TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  ''';
+
+  static const _createEventsIndexSql = '''
+    CREATE INDEX IF NOT EXISTS idx_calendar_events_user_start
+    ON $eventsTable (user_id, start_at)
   ''';
 
   Database? _database;
@@ -47,11 +69,21 @@ class AppDatabase {
       version: schemaVersion,
       onCreate: (db, version) async {
         await db.execute(_createTasksTableSql);
+        await db.execute(_createEventsTableSql);
+        await db.execute(_createEventsIndexSql);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(_createEventsTableSql);
+          await db.execute(_createEventsIndexSql);
+        }
       },
     );
   }
 
   static Future<void> createSchema(Database db) async {
     await db.execute(_createTasksTableSql);
+    await db.execute(_createEventsTableSql);
+    await db.execute(_createEventsIndexSql);
   }
 }

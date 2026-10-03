@@ -1,11 +1,14 @@
 import 'package:get/get.dart';
 
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/calendar_repository_impl.dart';
 import '../../data/repositories/task_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/repositories/calendar_repository.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../../presentation/controllers/app_controller.dart';
 import '../../presentation/controllers/auth_controller.dart';
+import '../../presentation/controllers/calendar_controller.dart';
 import '../../presentation/controllers/task_controller.dart';
 
 /// Registers app-wide dependencies once, at startup.
@@ -22,5 +25,9 @@ class InitialBinding extends Bindings {
 
     Get.lazyPut<TaskRepository>(() => TaskRepositoryImpl());
     Get.lazyPut<TaskController>(() => TaskController());
+
+    Get.lazyPut<CalendarRepository>(() => CalendarRepositoryImpl());
+    Get.lazyPut<CalendarController>(() => CalendarController());
   }
 }
+

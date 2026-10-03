@@ -6,9 +6,11 @@ import '../../../app/theme/app_semantic_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../controllers/app_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/calendar_controller.dart';
 import '../../controllers/task_controller.dart';
 import '../../widgets/app_empty_view.dart';
 import '../../widgets/app_section_container.dart';
+import '../../widgets/calendar/calendar_colors.dart';
 import '../../widgets/create_task_sheet.dart';
 import '../../widgets/task_card.dart';
 
@@ -45,7 +47,7 @@ class _ModuleEntry {
 
 const _upcomingModules = [
   _ModuleEntry('Tasks & Projects', Icons.check_box_outlined, route: AppRoutes.tasks),
-  _ModuleEntry('Calendar', Icons.calendar_today_outlined),
+  _ModuleEntry('Calendar', Icons.calendar_today_outlined, route: AppRoutes.calendar),
   _ModuleEntry('Notes', Icons.notes_outlined),
   _ModuleEntry('Habits & Goals', Icons.track_changes_outlined),
   _ModuleEntry('Finance', Icons.account_balance_wallet_outlined),
@@ -60,6 +62,7 @@ class DashboardPage extends StatelessWidget {
     final appController = Get.find<AppController>();
     final authController = Get.find<AuthController>();
     final taskController = Get.find<TaskController>();
+    final calendarController = Get.find<CalendarController>();
 
     final today = DateTime.now();
     final dateLabel =
@@ -186,14 +189,101 @@ class DashboardPage extends StatelessWidget {
               }),
               const SizedBox(height: AppSpacing.md),
 
-              const AppSectionContainer(
-                title: 'Upcoming',
-                child: AppEmptyView(
-                  message: 'No upcoming events',
-                  subtitle: 'Calendar events will appear here once the Calendar module is built.',
-                  icon: Icons.calendar_today_outlined,
-                ),
-              ),
+              // Next Up Section (Live Calendar)
+              Obx(() {
+                final nextEvent = calendarController.nextUpEvent;
+                if (nextEvent == null) {
+                  return AppSectionContainer(
+                    title: 'Next up',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Nothing scheduled.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Get.toNamed(AppRoutes.calendar),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            minimumSize: Size.zero,
+                          ),
+                          child: const Text('Open Calendar',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final tag = CalendarColors.getTag(nextEvent.colorTag);
+                final startH =
+                    nextEvent.startAt.hour.toString().padLeft(2, '0');
+                final startM =
+                    nextEvent.startAt.minute.toString().padLeft(2, '0');
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                return AppSectionContainer(
+                  title: 'Next up',
+                  child: InkWell(
+                    onTap: () => Get.toNamed(AppRoutes.calendar),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: tag.background(isDark),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: tag.border(isDark), width: 0.5),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Row(
+                        children: [
+                          Container(width: 4, color: tag.color),
+                          const SizedBox(width: 10),
+                          Text(
+                            '$startH:$startM',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: tag.color,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              nextEvent.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: tag.color,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward,
+                              size: 14,
+                              color: tag.color.withValues(alpha: 0.7)),
+                          const SizedBox(width: 10),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: AppSpacing.md),
 
               const AppSectionContainer(
