@@ -45,6 +45,17 @@ class UserScopedFirestoreDataSource {
     return ref.id;
   }
 
+  Future<void> set(
+    String uid,
+    String collection,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
+    return _collection(uid, collection)
+        .doc(docId)
+        .set(data, SetOptions(merge: true));
+  }
+
   Future<void> update(
     String uid,
     String collection,

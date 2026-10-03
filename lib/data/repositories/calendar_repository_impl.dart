@@ -128,20 +128,26 @@ class CalendarRepositoryImpl implements CalendarRepository {
         await _resolvedLocalDataSource.insertEvent(model);
       }
 
-      // Sync to Firestore
-      try {
-        await _resolvedRemoteDataSource.update(
-          event.userId,
-          FirestoreCollections.events,
-          event.id,
-          model.toFirestoreMap(),
-        );
-      } catch (_) {}
+      // Non-blocking sync to Firestore
+      _syncEventToRemote(event.userId, model);
 
       return model;
     } catch (e) {
       throw DatabaseFailure('Failed to create event: $e');
     }
+  }
+
+  void _syncEventToRemote(String userId, CalendarEventModel model) async {
+    try {
+      await _resolvedRemoteDataSource
+          .set(
+            userId,
+            FirestoreCollections.events,
+            model.id,
+            model.toFirestoreMap(),
+          )
+          .timeout(const Duration(milliseconds: 1500));
+    } catch (_) {}
   }
 
   @override
@@ -164,14 +170,8 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
       _memoryCache[updated.id] = updated;
 
-      try {
-        await _resolvedRemoteDataSource.update(
-          event.userId,
-          FirestoreCollections.events,
-          event.id,
-          updated.toFirestoreMap(),
-        );
-      } catch (_) {}
+      // Non-blocking sync to Firestore
+      _syncEventToRemote(event.userId, updated);
 
       return updated;
     } on Failure {
@@ -199,18 +199,24 @@ class CalendarRepositoryImpl implements CalendarRepository {
       final userId = event?.userId;
 
       if (userId != null) {
-        try {
-          await _resolvedRemoteDataSource.delete(
-            userId,
-            FirestoreCollections.events,
-            id,
-          );
-        } catch (_) {}
+        _syncDeleteToRemote(userId, id);
       }
     } on Failure {
       rethrow;
     } catch (e) {
       throw DatabaseFailure('Failed to delete event: $e');
     }
+  }
+
+  void _syncDeleteToRemote(String userId, String id) async {
+    try {
+      await _resolvedRemoteDataSource
+          .delete(
+            userId,
+            FirestoreCollections.events,
+            id,
+          )
+          .timeout(const Duration(milliseconds: 1500));
+    } catch (_) {}
   }
 }

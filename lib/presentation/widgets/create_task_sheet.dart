@@ -71,32 +71,38 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
-    final controller = Get.find<TaskController>();
+    try {
+      final controller = Get.find<TaskController>();
 
-    if (widget.taskToEdit != null) {
-      final updated = widget.taskToEdit!.copyWith(
-        title: _titleController.text.trim(),
-        description: _descController.text.trim().isEmpty
-            ? null
-            : _descController.text.trim(),
-        priority: _priority,
-        dueDate: _dueDate,
-        updatedAt: DateTime.now(),
-      );
-      await controller.updateTask(updated);
-    } else {
-      await controller.createTask(
-        title: _titleController.text.trim(),
-        description: _descController.text.trim().isEmpty
-            ? null
-            : _descController.text.trim(),
-        priority: _priority,
-        dueDate: _dueDate,
-      );
-    }
+      if (widget.taskToEdit != null) {
+        final updated = widget.taskToEdit!.copyWith(
+          title: _titleController.text.trim(),
+          description: _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+          priority: _priority,
+          dueDate: _dueDate,
+          updatedAt: DateTime.now(),
+        );
+        await controller.updateTask(updated);
+      } else {
+        await controller.createTask(
+          title: _titleController.text.trim(),
+          description: _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+          priority: _priority,
+          dueDate: _dueDate,
+        );
+      }
 
-    if (mounted) {
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

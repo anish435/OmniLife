@@ -115,21 +115,27 @@ class TaskRepositoryImpl implements TaskRepository {
         await _resolvedLocalDataSource.insertTask(model);
       }
 
-      // Sync to Firestore
-      try {
-        await _resolvedRemoteDataSource.update(
-          task.userId,
-          FirestoreCollections.tasks,
-          task.id,
-          model.toFirestoreMap(),
-        );
-      } catch (_) {
-        // Safe to ignore if offline — local state is already saved
-      }
+      // Non-blocking background sync to Firestore
+      _syncTaskToRemote(task.userId, model);
 
       return model;
     } catch (e) {
       throw DatabaseFailure('Failed to create task: $e');
+    }
+  }
+
+  void _syncTaskToRemote(String userId, TaskModel model) async {
+    try {
+      await _resolvedRemoteDataSource
+          .set(
+            userId,
+            FirestoreCollections.tasks,
+            model.id,
+            model.toFirestoreMap(),
+          )
+          .timeout(const Duration(milliseconds: 1500));
+    } catch (_) {
+      // Safe to ignore if offline or network unavailable — local state is saved
     }
   }
 
@@ -153,14 +159,8 @@ class TaskRepositoryImpl implements TaskRepository {
 
       _memoryCache[updated.id] = updated;
 
-      try {
-        await _resolvedRemoteDataSource.update(
-          task.userId,
-          FirestoreCollections.tasks,
-          task.id,
-          updated.toFirestoreMap(),
-        );
-      } catch (_) {}
+      // Non-blocking sync to Firestore
+      _syncTaskToRemote(task.userId, updated);
 
       return updated;
     } on Failure {
@@ -188,19 +188,25 @@ class TaskRepositoryImpl implements TaskRepository {
       final userId = task?.userId;
 
       if (userId != null) {
-        try {
-          await _resolvedRemoteDataSource.delete(
-            userId,
-            FirestoreCollections.tasks,
-            id,
-          );
-        } catch (_) {}
+        _syncDeleteToRemote(userId, id);
       }
     } on Failure {
       rethrow;
     } catch (e) {
       throw DatabaseFailure('Failed to delete task: $e');
     }
+  }
+
+  void _syncDeleteToRemote(String userId, String id) async {
+    try {
+      await _resolvedRemoteDataSource
+          .delete(
+            userId,
+            FirestoreCollections.tasks,
+            id,
+          )
+          .timeout(const Duration(milliseconds: 1500));
+    } catch (_) {}
   }
 
   @override
@@ -223,14 +229,7 @@ class TaskRepositoryImpl implements TaskRepository {
         );
       }
 
-      try {
-        await _resolvedRemoteDataSource.update(
-          updated.userId,
-          FirestoreCollections.tasks,
-          id,
-          TaskModel.fromEntity(updated).toFirestoreMap(),
-        );
-      } catch (_) {}
+      _syncTaskToRemote(updated.userId, TaskModel.fromEntity(updated));
 
       return updated;
     } on Failure {
