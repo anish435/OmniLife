@@ -37,9 +37,9 @@ void main() {
       find.widgetWithText(TextFormField, 'Confirm password'),
       'different123',
     );
-    final registerBtn = find.widgetWithText(ElevatedButton, 'Register');
-    await tester.ensureVisible(registerBtn);
-    await tester.tap(registerBtn);
+    final signUpBtn = find.widgetWithText(ElevatedButton, 'Sign Up');
+    await tester.ensureVisible(signUpBtn);
+    await tester.tap(signUpBtn);
     await tester.pump();
 
     expect(find.text('Passwords do not match'), findsOneWidget);
@@ -48,9 +48,9 @@ void main() {
   testWidgets('shows validation errors on empty submit', (tester) async {
     await pumpRegisterPage(tester, FakeAuthRepository());
 
-    final registerBtn = find.widgetWithText(ElevatedButton, 'Register');
-    await tester.ensureVisible(registerBtn);
-    await tester.tap(registerBtn);
+    final signUpBtn = find.widgetWithText(ElevatedButton, 'Sign Up');
+    await tester.ensureVisible(signUpBtn);
+    await tester.tap(signUpBtn);
     await tester.pump();
 
     expect(find.text('Email is required'), findsOneWidget);
