@@ -61,6 +61,15 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() => _dataSource.logout();
 
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _dataSource.sendPasswordResetEmail(email);
+    } on fb.FirebaseAuthException catch (e) {
+      throw AuthFailure(e.message ?? 'Password reset failed.', code: e.code);
+    }
+  }
+
   AppUser? _toAppUser(fb.User? user) {
     if (user == null) return null;
     return AppUser(

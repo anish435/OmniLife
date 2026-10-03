@@ -50,6 +50,9 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> logout() async {
     emit(null);
   }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
 }
 
 class FakeTaskRepository implements TaskRepository {

@@ -127,6 +127,29 @@ class AuthController extends GetxController {
     await _authRepository!.logout();
   }
 
+  Future<bool> sendPasswordResetEmail(String email) async {
+    if (_authRepository == null) {
+      errorMessage.value =
+          'Authentication is unavailable: Firebase has not been configured '
+          'for this environment.';
+      return false;
+    }
+    errorMessage.value = null;
+    isLoading.value = true;
+    try {
+      await _authRepository!.sendPasswordResetEmail(email);
+      return true;
+    } on AuthFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (_) {
+      errorMessage.value = 'Failed to send reset email. Please try again.';
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   void clearError() => errorMessage.value = null;
 
 

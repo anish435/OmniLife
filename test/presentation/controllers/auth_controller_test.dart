@@ -69,6 +69,17 @@ class FakeAuthRepository implements AuthRepository {
     emit(null);
   }
 
+  Object? failureToThrowOnPasswordReset;
+  String? lastResetEmailSent;
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (failureToThrowOnPasswordReset != null) {
+      throw failureToThrowOnPasswordReset!;
+    }
+    lastResetEmailSent = email;
+  }
+
   void dispose() => _controller.close();
 }
 

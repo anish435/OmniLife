@@ -88,5 +88,8 @@ class FirebaseAuthDataSource {
     }
     await _firebaseAuth.signOut();
   }
+
+  Future<void> sendPasswordResetEmail(String email) =>
+      _firebaseAuth.sendPasswordResetEmail(email: email);
 }
 

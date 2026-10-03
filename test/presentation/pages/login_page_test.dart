@@ -22,7 +22,9 @@ void main() {
   testWidgets('shows validation errors on empty submit', (tester) async {
     await pumpLoginPage(tester, FakeAuthRepository());
 
-    await tester.tap(find.text('Login'));
+    final signInBtn = find.widgetWithText(ElevatedButton, 'Sign In');
+    await tester.ensureVisible(signInBtn);
+    await tester.tap(signInBtn);
     await tester.pump();
 
     expect(find.text('Email is required'), findsOneWidget);
@@ -40,7 +42,9 @@ void main() {
       find.widgetWithText(TextFormField, 'Password'),
       'password123',
     );
-    await tester.tap(find.text('Login'));
+    final signInBtn = find.widgetWithText(ElevatedButton, 'Sign In');
+    await tester.ensureVisible(signInBtn);
+    await tester.tap(signInBtn);
     await tester.pump();
 
     expect(find.text('Enter a valid email address'), findsOneWidget);
@@ -50,8 +54,10 @@ void main() {
     final fake = FakeAuthRepository();
     await pumpLoginPage(tester, fake);
 
-    expect(find.text('Continue with Google'), findsOneWidget);
-    await tester.tap(find.text('Continue with Google'));
+    final googleBtn = find.text('Continue with Google');
+    expect(googleBtn, findsOneWidget);
+    await tester.ensureVisible(googleBtn);
+    await tester.tap(googleBtn);
     await tester.pump();
 
     final controller = Get.find<AuthController>();
