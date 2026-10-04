@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/app_spacing.dart';
 import '../../controllers/wellness_controller.dart';
-import 'dart:math' as math;
 
 class WellnessPage extends StatelessWidget {
   const WellnessPage({super.key});
@@ -111,7 +110,7 @@ class WellnessPage extends StatelessWidget {
                         CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 12,
-                          backgroundColor: Colors.blue.withOpacity(0.2),
+                          backgroundColor: Colors.blue.withValues(alpha: 0.2),
                           color: Colors.blue,
                           strokeCap: StrokeCap.round,
                         ),
@@ -239,7 +238,7 @@ class WellnessPage extends StatelessWidget {
               return Column(
                 children: [
                   DropdownButtonFormField<String>(
-                    value: currentType,
+                    initialValue: currentType,
                     decoration: const InputDecoration(
                       labelText: 'Activity Type',
                       border: OutlineInputBorder(),
@@ -329,7 +328,7 @@ class WellnessPage extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Your sleep quality directly impacts your task completion rate. On days with "Excellent" sleep, you complete 32% more tasks!',
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8)),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8)),
             ),
           ],
         ),
@@ -359,7 +358,7 @@ class _MoodIcon extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.transparent,
           shape: BoxShape.circle,
           border: Border.all(
             color: isSelected ? color : Colors.transparent,

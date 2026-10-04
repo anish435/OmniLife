@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io' show Platform, File;
+import 'dart:io' show File;
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';

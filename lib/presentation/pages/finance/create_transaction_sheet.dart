@@ -145,7 +145,7 @@ class _CreateTransactionSheetState extends State<CreateTransactionSheet> {
           if (!_isIncome) ...[
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<TransactionCategory>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),

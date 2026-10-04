@@ -38,14 +38,6 @@ class HabitRepositoryImpl implements HabitRepository {
         .delete(userId, FirestoreCollections.habits, habitId)
         .catchError((_) {});
   }
-  
-  void _syncLogToRemote(String userId, String habitId, HabitLogModel log) {
-    // Nested subcollection: users/{uid}/habits/{habitId}/logs/{logId}
-    // We would need to extend UserScopedFirestoreDataSource for nested subcollections.
-    // For now, keeping it local on mobile, and skipping on web, or flattening it.
-    // In OmniLife, logs are subcollections. We'll skip Firestore sync for logs in this exact snippet to keep it simple, 
-    // or we can just rely on the local database for offline-first.
-  }
 
   @override
   Future<List<Habit>> getHabits(String userId) async {

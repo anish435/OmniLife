@@ -17,7 +17,7 @@ class WellnessRepositoryImpl implements WellnessRepository {
   Future<void> saveLog(String userId, WellnessLog log) async {
     // Generate predictable ID if not present
     final dateStr = log.date.toIso8601String().split('T').first;
-    final id = log.id.isEmpty ? "\${userId}_\$dateStr" : log.id;
+    final id = log.id.isEmpty ? '${userId}_$dateStr' : log.id;
     
     final model = WellnessLogModel.fromEntity(log.copyWith(
       id: id,
@@ -44,7 +44,7 @@ class WellnessRepositoryImpl implements WellnessRepository {
   @override
   Future<WellnessLog?> getLogForDate(String userId, DateTime date) async {
     final dateStr = date.toIso8601String().split('T').first;
-    final id = "\${userId}_\$dateStr";
+    final id = '${userId}_$dateStr';
 
     if (kIsWeb) {
       final doc = await _remoteDataSource.get(userId, FirestoreCollections.wellness, id);

@@ -10,20 +10,33 @@ import 'firestore_paths.dart';
 /// Habit, etc.) will wrap this with typed models in a later phase.
 class UserScopedFirestoreDataSource {
   UserScopedFirestoreDataSource({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _injectedFirestore = firestore;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _injectedFirestore;
 
-  CollectionReference<Map<String, dynamic>> _collection(
+  FirebaseFirestore? get _firestore {
+    if (_injectedFirestore != null) return _injectedFirestore;
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  CollectionReference<Map<String, dynamic>>? _collection(
     String uid,
     String collection,
   ) {
-    return _firestore.collection(userScopedCollectionPath(uid, collection));
+    final firestore = _firestore;
+    if (firestore == null) return null;
+    return firestore.collection(userScopedCollectionPath(uid, collection));
   }
 
   Future<List<Map<String, dynamic>>> list(String uid, String collection) async {
     try {
-      final snapshot = await _collection(uid, collection)
+      final col = _collection(uid, collection);
+      if (col == null) return [];
+      final snapshot = await col
           .get()
           .timeout(const Duration(milliseconds: 1500));
       return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
@@ -38,7 +51,9 @@ class UserScopedFirestoreDataSource {
     String docId,
   ) async {
     try {
-      final doc = await _collection(uid, collection)
+      final col = _collection(uid, collection);
+      if (col == null) return null;
+      final doc = await col
           .doc(docId)
           .get()
           .timeout(const Duration(milliseconds: 1500));
@@ -54,7 +69,9 @@ class UserScopedFirestoreDataSource {
     String collection,
     Map<String, dynamic> data,
   ) async {
-    final ref = await _collection(uid, collection)
+    final col = _collection(uid, collection);
+    if (col == null) return '';
+    final ref = await col
         .add(data)
         .timeout(const Duration(milliseconds: 1500));
     return ref.id;
@@ -66,7 +83,9 @@ class UserScopedFirestoreDataSource {
     String docId,
     Map<String, dynamic> data,
   ) {
-    return _collection(uid, collection)
+    final col = _collection(uid, collection);
+    if (col == null) return Future.value();
+    return col
         .doc(docId)
         .set(data, SetOptions(merge: true))
         .timeout(const Duration(milliseconds: 1500));
@@ -78,14 +97,18 @@ class UserScopedFirestoreDataSource {
     String docId,
     Map<String, dynamic> data,
   ) {
-    return _collection(uid, collection)
+    final col = _collection(uid, collection);
+    if (col == null) return Future.value();
+    return col
         .doc(docId)
         .update(data)
         .timeout(const Duration(milliseconds: 1500));
   }
 
   Future<void> delete(String uid, String collection, String docId) {
-    return _collection(uid, collection)
+    final col = _collection(uid, collection);
+    if (col == null) return Future.value();
+    return col
         .doc(docId)
         .delete()
         .timeout(const Duration(milliseconds: 1500));

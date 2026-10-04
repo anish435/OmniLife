@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../domain/entities/wellness_log.dart';
 import '../../domain/repositories/wellness_repository.dart';
 import 'auth_controller.dart';
-import 'package:uuid/uuid.dart';
 
 class WellnessController extends GetxController {
   final _repository = Get.find<WellnessRepository>();

@@ -60,7 +60,7 @@ class FinancePage extends StatelessWidget {
                   const SizedBox(height: AppSpacing.lg),
                   Text('Recent Transactions', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: AppSpacing.sm),
-                  ...controller.transactions.map((tx) => _buildTransactionTile(context, controller, tx)).toList(),
+                  ...controller.transactions.map((tx) => _buildTransactionTile(context, controller, tx)),
                 ],
               );
             }),
@@ -262,7 +262,7 @@ class FinancePage extends StatelessWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -273,7 +273,7 @@ class FinancePage extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: tx.isIncome ? Colors.green.withOpacity(0.2) : Theme.of(context).colorScheme.primaryContainer,
+        backgroundColor: tx.isIncome ? Colors.green.withValues(alpha: 0.2) : Theme.of(context).colorScheme.primaryContainer,
         child: Icon(
           _getIconForCategory(tx.category), 
           color: tx.isIncome ? Colors.green : Theme.of(context).colorScheme.primary,

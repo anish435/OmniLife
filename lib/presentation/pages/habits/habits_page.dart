@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
-
 import '../../../app/theme/app_spacing.dart';
 import '../../controllers/habits_controller.dart';
 import '../../widgets/app_empty_view.dart';
@@ -44,7 +42,7 @@ class HabitsPage extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.screenPadding),
             itemCount: habits.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
               final habit = habits[index];
               return HabitCard(habit: habit);
