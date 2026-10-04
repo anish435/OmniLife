@@ -46,6 +46,10 @@ dependencies:
   uuid: ^4.6.0
   equatable: ^3.0.0
   intl: ^0.20.3
+  csv: any
+  image_picker: any
+  firebase_storage: any
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

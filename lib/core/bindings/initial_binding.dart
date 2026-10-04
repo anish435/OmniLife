@@ -16,6 +16,9 @@ import '../../domain/repositories/note_repository.dart';
 import '../../presentation/controllers/habits_controller.dart';
 import '../../data/repositories/habit_repository_impl.dart';
 import '../../domain/repositories/habit_repository.dart';
+import '../../presentation/controllers/finance_controller.dart';
+import '../../data/repositories/finance_repository_impl.dart';
+import '../../domain/repositories/finance_repository.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -40,6 +43,9 @@ class InitialBinding extends Bindings {
 
     Get.lazyPut<HabitRepository>(() => HabitRepositoryImpl(), fenix: true);
     Get.put(HabitsController(), permanent: true);
+
+    Get.lazyPut<FinanceRepository>(() => FinanceRepositoryImpl(), fenix: true);
+    Get.put(FinanceController(), permanent: true);
   }
 }
 

@@ -20,6 +20,10 @@ import '../../presentation/pages/habits/habits_page.dart';
 import '../../presentation/controllers/habits_controller.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../../data/repositories/habit_repository_impl.dart';
+import '../../presentation/pages/finance/finance_page.dart';
+import '../../presentation/controllers/finance_controller.dart';
+import '../../domain/repositories/finance_repository.dart';
+import '../../data/repositories/finance_repository_impl.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -100,6 +104,18 @@ class AppPages {
         }
         if (!Get.isRegistered<HabitsController>()) {
           Get.put(HabitsController(), permanent: true);
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.finance,
+      page: () => const FinancePage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<FinanceRepository>()) {
+          Get.lazyPut<FinanceRepository>(() => FinanceRepositoryImpl(), fenix: true);
+        }
+        if (!Get.isRegistered<FinanceController>()) {
+          Get.put(FinanceController(), permanent: true);
         }
       }),
     ),

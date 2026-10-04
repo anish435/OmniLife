@@ -11,12 +11,13 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
-  static const schemaVersion = 4;
+  static const schemaVersion = 6;
   static const tasksTable = 'tasks';
   static const eventsTable = 'calendar_events';
   static const notesTable = 'notes';
   static const habitsTable = 'habits';
   static const habitLogsTable = 'habit_logs';
+  static const financeTable = 'finance';
 
   static const _createTasksTableSql = '''
     CREATE TABLE $tasksTable (
@@ -98,6 +99,21 @@ class AppDatabase {
     )
   ''';
 
+  static const _createFinanceTableSql = '''
+    CREATE TABLE $financeTable (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      date INTEGER NOT NULL,
+      is_income INTEGER NOT NULL DEFAULT 0,
+      receipt_url TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  ''';
+
   Database? _database;
 
   Future<Database> get database async {
@@ -121,6 +137,7 @@ class AppDatabase {
         await db.execute(_createNotesTableSql);
         await db.execute(_createHabitsTableSql);
         await db.execute(_createHabitLogsTableSql);
+        await db.execute(_createFinanceTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -133,6 +150,13 @@ class AppDatabase {
         if (oldVersion < 4) {
           await db.execute(_createHabitsTableSql);
           await db.execute(_createHabitLogsTableSql);
+        }
+        if (oldVersion < 5) {
+          // In an actual production scenario we would execute the expenses table.
+          // But since we immediately changed it to financeTable for v6, we'll just skip to it.
+        }
+        if (oldVersion < 6) {
+          await db.execute(_createFinanceTableSql);
         }
       },
       onConfigure: (db) async {
@@ -148,5 +172,6 @@ class AppDatabase {
     await db.execute(_createNotesTableSql);
     await db.execute(_createHabitsTableSql);
     await db.execute(_createHabitLogsTableSql);
+    await db.execute(_createFinanceTableSql);
   }
 }
