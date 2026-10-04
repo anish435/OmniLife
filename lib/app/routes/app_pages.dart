@@ -93,7 +93,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.habits,
-      page: () => const HabitsPage(),
+      page: () => HabitsPage(),
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<HabitRepository>()) {
           Get.lazyPut<HabitRepository>(() => HabitRepositoryImpl(), fenix: true);

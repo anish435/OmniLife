@@ -137,7 +137,7 @@ class HabitCard extends StatelessWidget {
                                     ? Icon(
                                         Icons.check, 
                                         size: 18, 
-                                        color: habit.colorTag != 'default' ? tag.onColor : theme.colorScheme.onPrimary,
+                                        color: habit.colorTag != 'default' ? Colors.white : theme.colorScheme.onPrimary,
                                       )
                                     : null,
                               ),

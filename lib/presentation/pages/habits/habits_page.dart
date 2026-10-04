@@ -8,11 +8,12 @@ import '../../widgets/app_empty_view.dart';
 import 'create_habit_sheet.dart';
 import 'habit_card.dart';
 
-class HabitsPage extends GetView<HabitsController> {
+class HabitsPage extends StatelessWidget {
   const HabitsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HabitsController>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Habits & Goals'),

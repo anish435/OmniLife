@@ -130,7 +130,7 @@ class HabitRepositoryImpl implements HabitRepository {
       return null;
     } else {
       final log = HabitLogModel(
-        id: const Uuid().v4(),
+        id: Uuid().v4(),
         habitId: habitId,
         date: date,
         isCompleted: true,
