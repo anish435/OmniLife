@@ -8,4 +8,5 @@ abstract final class AppRoutes {
   static const tasks = '/tasks';
   static const calendar = '/calendar';
   static const notes = '/notes';
+  static const habits = '/habits';
 }

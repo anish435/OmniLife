@@ -13,6 +13,9 @@ import '../../presentation/controllers/task_controller.dart';
 import '../../presentation/controllers/notes_controller.dart';
 import '../../data/repositories/note_repository_impl.dart';
 import '../../domain/repositories/note_repository.dart';
+import '../../presentation/controllers/habits_controller.dart';
+import '../../data/repositories/habit_repository_impl.dart';
+import '../../domain/repositories/habit_repository.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -34,6 +37,9 @@ class InitialBinding extends Bindings {
 
     Get.lazyPut<NoteRepository>(() => NoteRepositoryImpl(), fenix: true);
     Get.put(NotesController(), permanent: true);
+
+    Get.lazyPut<HabitRepository>(() => HabitRepositoryImpl(), fenix: true);
+    Get.put(HabitsController(), permanent: true);
   }
 }
 

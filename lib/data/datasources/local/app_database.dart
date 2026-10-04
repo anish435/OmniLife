@@ -11,10 +11,12 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
-  static const schemaVersion = 3;
+  static const schemaVersion = 4;
   static const tasksTable = 'tasks';
   static const eventsTable = 'calendar_events';
   static const notesTable = 'notes';
+  static const habitsTable = 'habits';
+  static const habitLogsTable = 'habit_logs';
 
   static const _createTasksTableSql = '''
     CREATE TABLE $tasksTable (
@@ -68,6 +70,34 @@ class AppDatabase {
     )
   ''';
 
+  static const _createHabitsTableSql = '''
+    CREATE TABLE $habitsTable (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      frequency TEXT NOT NULL,
+      target_days_per_week INTEGER NOT NULL,
+      specific_days TEXT NOT NULL,
+      color_tag TEXT NOT NULL,
+      current_streak INTEGER NOT NULL,
+      longest_streak INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  ''';
+
+  static const _createHabitLogsTableSql = '''
+    CREATE TABLE $habitLogsTable (
+      id TEXT PRIMARY KEY,
+      habit_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      is_completed INTEGER NOT NULL DEFAULT 1,
+      UNIQUE(habit_id, date),
+      FOREIGN KEY(habit_id) REFERENCES $habitsTable(id) ON DELETE CASCADE
+    )
+  ''';
+
   Database? _database;
 
   Future<Database> get database async {
@@ -89,6 +119,8 @@ class AppDatabase {
         await db.execute(_createEventsTableSql);
         await db.execute(_createEventsIndexSql);
         await db.execute(_createNotesTableSql);
+        await db.execute(_createHabitsTableSql);
+        await db.execute(_createHabitLogsTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -98,6 +130,13 @@ class AppDatabase {
         if (oldVersion < 3) {
           await db.execute(_createNotesTableSql);
         }
+        if (oldVersion < 4) {
+          await db.execute(_createHabitsTableSql);
+          await db.execute(_createHabitLogsTableSql);
+        }
+      },
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
       },
     );
   }
@@ -107,6 +146,7 @@ class AppDatabase {
     await db.execute(_createEventsTableSql);
     await db.execute(_createEventsIndexSql);
     await db.execute(_createNotesTableSql);
+    await db.execute(_createHabitsTableSql);
+    await db.execute(_createHabitLogsTableSql);
   }
 }
-

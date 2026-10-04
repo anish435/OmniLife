@@ -49,7 +49,7 @@ const _upcomingModules = [
   _ModuleEntry('Tasks & Projects', Icons.check_box_outlined, route: AppRoutes.tasks),
   _ModuleEntry('Calendar', Icons.calendar_today_outlined, route: AppRoutes.calendar),
   _ModuleEntry('Notes', Icons.notes_outlined, route: AppRoutes.notes),
-  _ModuleEntry('Habits & Goals', Icons.track_changes_outlined),
+  _ModuleEntry('Habits & Goals', Icons.track_changes_outlined, route: AppRoutes.habits),
   _ModuleEntry('Finance', Icons.account_balance_wallet_outlined),
   _ModuleEntry('Wellness', Icons.self_improvement_outlined),
 ];
