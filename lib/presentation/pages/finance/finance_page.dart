@@ -109,7 +109,7 @@ class FinancePage extends StatelessWidget {
             const Text('Net Balance'),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '\${balance >= 0 ? '+' : ''}\$${balance.toStringAsFixed(2)}',
+              '${balance < 0 ? "-" : ""}\$${balance.abs().toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: balance >= 0 ? Colors.green : Colors.red,
@@ -181,7 +181,7 @@ class FinancePage extends StatelessWidget {
                 Container(width: 12, height: 12, color: color),
                 const SizedBox(width: 4),
                 Text(
-                  '\${category.name.capitalizeFirst} (\${(amount / total * 100).toStringAsFixed(1)}%)',
+                  '${category.name.capitalizeFirst} (${(amount / total * 100).toStringAsFixed(1)}%)',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
