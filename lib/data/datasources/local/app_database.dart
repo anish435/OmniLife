@@ -11,13 +11,14 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
-  static const schemaVersion = 6;
+  static const schemaVersion = 7;
   static const tasksTable = 'tasks';
   static const eventsTable = 'calendar_events';
   static const notesTable = 'notes';
   static const habitsTable = 'habits';
   static const habitLogsTable = 'habit_logs';
   static const financeTable = 'finance';
+  static const wellnessTable = 'wellness_logs';
 
   static const _createTasksTableSql = '''
     CREATE TABLE $tasksTable (
@@ -114,6 +115,22 @@ class AppDatabase {
     )
   ''';
 
+  static const _createWellnessTableSql = '''
+    CREATE TABLE $wellnessTable (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      water_intake_ml INTEGER NOT NULL,
+      sleep_duration_hours REAL NOT NULL,
+      sleep_quality INTEGER NOT NULL,
+      workout_duration_minutes INTEGER NOT NULL,
+      workout_type TEXT NOT NULL,
+      mood_score INTEGER NOT NULL,
+      synced INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(user_id, date)
+    )
+  ''';
+
   Database? _database;
 
   Future<Database> get database async {
@@ -138,6 +155,7 @@ class AppDatabase {
         await db.execute(_createHabitsTableSql);
         await db.execute(_createHabitLogsTableSql);
         await db.execute(_createFinanceTableSql);
+        await db.execute(_createWellnessTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -158,6 +176,9 @@ class AppDatabase {
         if (oldVersion < 6) {
           await db.execute(_createFinanceTableSql);
         }
+        if (oldVersion < 7) {
+          await db.execute(_createWellnessTableSql);
+        }
       },
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
@@ -173,5 +194,6 @@ class AppDatabase {
     await db.execute(_createHabitsTableSql);
     await db.execute(_createHabitLogsTableSql);
     await db.execute(_createFinanceTableSql);
+    await db.execute(_createWellnessTableSql);
   }
 }

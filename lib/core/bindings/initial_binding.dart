@@ -19,6 +19,11 @@ import '../../domain/repositories/habit_repository.dart';
 import '../../presentation/controllers/finance_controller.dart';
 import '../../data/repositories/finance_repository_impl.dart';
 import '../../domain/repositories/finance_repository.dart';
+import '../../presentation/controllers/wellness_controller.dart';
+import '../../data/repositories/wellness_repository_impl.dart';
+import '../../domain/repositories/wellness_repository.dart';
+import '../../data/datasources/local/local_wellness_data_source.dart';
+import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -46,6 +51,15 @@ class InitialBinding extends Bindings {
 
     Get.lazyPut<FinanceRepository>(() => FinanceRepositoryImpl(), fenix: true);
     Get.put(FinanceController(), permanent: true);
+
+    Get.lazyPut<WellnessRepository>(
+      () => WellnessRepositoryImpl(
+        LocalWellnessDataSource(),
+        UserScopedFirestoreDataSource(),
+      ),
+      fenix: true,
+    );
+    Get.put(WellnessController(), permanent: true);
   }
 }
 

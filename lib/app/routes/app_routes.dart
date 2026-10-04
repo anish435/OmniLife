@@ -10,4 +10,5 @@ abstract final class AppRoutes {
   static const notes = '/notes';
   static const habits = '/habits';
   static const finance = '/finance';
+  static const wellness = '/wellness';
 }

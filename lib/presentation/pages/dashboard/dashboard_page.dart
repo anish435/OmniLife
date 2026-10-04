@@ -51,7 +51,7 @@ const _upcomingModules = [
   _ModuleEntry('Notes', Icons.notes_outlined, route: AppRoutes.notes),
   _ModuleEntry('Habits & Goals', Icons.track_changes_outlined, route: AppRoutes.habits),
   _ModuleEntry('Finance', Icons.account_balance_wallet_outlined, route: AppRoutes.finance),
-  _ModuleEntry('Wellness', Icons.self_improvement_outlined),
+  _ModuleEntry('Wellness', Icons.self_improvement_outlined, route: AppRoutes.wellness),
 ];
 
 class DashboardPage extends StatelessWidget {

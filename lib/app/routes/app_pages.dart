@@ -24,6 +24,12 @@ import '../../presentation/pages/finance/finance_page.dart';
 import '../../presentation/controllers/finance_controller.dart';
 import '../../domain/repositories/finance_repository.dart';
 import '../../data/repositories/finance_repository_impl.dart';
+import '../../presentation/pages/wellness/wellness_page.dart';
+import '../../presentation/controllers/wellness_controller.dart';
+import '../../domain/repositories/wellness_repository.dart';
+import '../../data/repositories/wellness_repository_impl.dart';
+import '../../data/datasources/local/local_wellness_data_source.dart';
+import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -116,6 +122,24 @@ class AppPages {
         }
         if (!Get.isRegistered<FinanceController>()) {
           Get.put(FinanceController(), permanent: true);
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.wellness,
+      page: () => const WellnessPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<WellnessRepository>()) {
+          Get.lazyPut<WellnessRepository>(
+            () => WellnessRepositoryImpl(
+              LocalWellnessDataSource(),
+              UserScopedFirestoreDataSource(),
+            ),
+            fenix: true,
+          );
+        }
+        if (!Get.isRegistered<WellnessController>()) {
+          Get.put(WellnessController(), permanent: true);
         }
       }),
     ),
