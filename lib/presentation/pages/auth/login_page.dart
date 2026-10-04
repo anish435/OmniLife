@@ -282,52 +282,32 @@ class _LoginPageState extends State<LoginPage> {
                         final loading = _authController.isLoading.value;
                         final actionLabel = isSignIn ? 'Sign In' : 'Sign Up';
 
-                        return Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            gradient: LinearGradient(
-                              colors: [
-                                primary,
-                                AuthThemeTokens.ai(isDark),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primary.withValues(
-                                  alpha: isDark ? 0.40 : 0.28,
-                                ),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
+                        return SizedBox(
+                          height: 48,
                           child: ElevatedButton(
                             onPressed: loading ? null : _submit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
+                              backgroundColor: primary,
                               foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  Colors.white.withValues(alpha: 0.12),
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                             child: loading
                                 ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
+                                    height: 20,
+                                    width: 20,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
+                                      strokeWidth: 2.0,
                                       color: Colors.white,
                                     ),
                                   )
                                 : Text(
                                     actionLabel,
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14.5,
                                       letterSpacing: 0.2,
                                     ),
                                   ),

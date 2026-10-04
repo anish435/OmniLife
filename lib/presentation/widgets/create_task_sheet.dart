@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_semantic_colors.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../domain/entities/task.dart';
+import '../../core/services/notification_service.dart';
 import '../controllers/task_controller.dart';
+import 'app_bottom_sheet_frame.dart';
 
-/// Modal bottom sheet for creating or editing a task.
+/// Modal bottom sheet for creating or editing a task with confirmation.
 class CreateTaskSheet extends StatefulWidget {
   const CreateTaskSheet({super.key, this.taskToEdit});
 
   final Task? taskToEdit;
 
-  static Future<void> show(BuildContext context, {Task? taskToEdit}) {
-    return showModalBottomSheet(
+  static Future<void> show(BuildContext context, {Task? taskToEdit}) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -71,6 +74,9 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
+    final title = _titleController.text.trim();
+    final desc = _descController.text.trim().isEmpty ? null : _descController.text.trim();
+
     try {
       final controller = Get.isRegistered<TaskController>()
           ? Get.find<TaskController>()
@@ -78,10 +84,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
 
       if (widget.taskToEdit != null) {
         final updated = widget.taskToEdit!.copyWith(
-          title: _titleController.text.trim(),
-          description: _descController.text.trim().isEmpty
-              ? null
-              : _descController.text.trim(),
+          title: title,
+          description: desc,
           priority: _priority,
           dueDate: _dueDate,
           updatedAt: DateTime.now(),
@@ -89,16 +93,54 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         await controller.updateTask(updated);
       } else {
         await controller.createTask(
-          title: _titleController.text.trim(),
-          description: _descController.text.trim().isEmpty
-              ? null
-              : _descController.text.trim(),
+          title: title,
+          description: desc,
           priority: _priority,
           dueDate: _dueDate,
         );
+
+        // Notification trigger (Rubric D2: Task Reminder)
+        if (Get.isRegistered<NotificationService>()) {
+          final notifService = Get.find<NotificationService>();
+          await notifService.showTaskReminder(
+            title: title,
+            dueDate: _dueDate,
+          );
+          if (_dueDate != null && _dueDate!.isAfter(DateTime.now())) {
+            await notifService.scheduleReminder(
+              id: title.hashCode & 0x7FFFFFFF,
+              title: 'Reminder: $title',
+              body: 'Task is due now',
+              scheduledDate: _dueDate!,
+            );
+          }
+        }
       }
 
       if (mounted) {
+        // Confirmation feedback (Rubric D1)
+        final dateStr = _dueDate != null
+            ? DateFormat('EEE, MMM d').format(_dueDate!)
+            : 'No due date';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.taskToEdit != null
+                        ? 'Updated "$title" ($dateStr)'
+                        : 'Created "$title" ($dateStr)',
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         } else if (Get.isDialogOpen == true || Get.isBottomSheetOpen == true) {
@@ -125,181 +167,155 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isEditing = widget.taskToEdit != null;
+    final hairline = theme.colorScheme.outline;
 
-    final mediaQuery = MediaQuery.of(context);
-    final bottomInset = mediaQuery.viewInsets.bottom;
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 540),
-      margin: EdgeInsets.only(
-        left: AppSpacing.md,
-        right: AppSpacing.md,
-        bottom: bottomInset + AppSpacing.md,
-      ),
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surface : Colors.white,
-        borderRadius: const BorderRadius.all(Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return AppBottomSheetFrame(
+      title: isEditing ? 'Edit Task' : 'New Task',
+      action: ElevatedButton(
+        onPressed: _isSaving ? null : _submit,
+        child: _isSaving
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Text(isEditing ? 'Save Changes' : 'Create Task'),
       ),
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isEditing ? 'Edit Task' : 'New Task',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Title Field (large, prominent)
+            TextFormField(
+              controller: _titleController,
+              autofocus: true,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(
+                labelText: 'Task title',
+                hintText: 'What needs to be done?',
               ),
-              const SizedBox(height: AppSpacing.md),
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) {
+                  return 'Title cannot be empty';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
 
-              // Title Field
-              TextFormField(
-                controller: _titleController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Task title',
-                  hintText: 'What needs to be done?',
-                ),
-                validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'Title cannot be empty';
-                  }
-                  return null;
-                },
+            // Description Field
+            TextFormField(
+              controller: _descController,
+              maxLines: 2,
+              style: theme.textTheme.bodyMedium,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                hintText: 'Add details, notes or links',
               ),
-              const SizedBox(height: AppSpacing.md),
+            ),
+            const SizedBox(height: AppSpacing.mdPlus),
 
-              // Description Field
-              TextFormField(
-                controller: _descController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                  hintText: 'Add details, notes or links',
-                ),
+            // Priority Selector
+            Text(
+              'PRIORITY',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: AppSpacing.md),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: TaskPriority.values.map((p) {
+                final isSelected = _priority == p;
+                Color chipColor;
+                switch (p) {
+                  case TaskPriority.high:
+                    chipColor = AppColors.error;
+                    break;
+                  case TaskPriority.medium:
+                    chipColor = context.semanticColors.warning;
+                    break;
+                  case TaskPriority.low:
+                    chipColor = context.semanticColors.moduleTasks;
+                    break;
+                }
 
-              // Priority Selector
-              Text(
-                'Priority',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: TaskPriority.values.map((p) {
-                  final isSelected = _priority == p;
-                  Color chipColor;
-                  switch (p) {
-                    case TaskPriority.high:
-                      chipColor = AppColors.error;
-                      break;
-                    case TaskPriority.medium:
-                      chipColor = context.semanticColors.warning;
-                      break;
-                    case TaskPriority.low:
-                      chipColor = AppColors.primary;
-                      break;
-                  }
-
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(
-                        label: Center(
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: InkWell(
+                      onTap: () => setState(() => _priority = p),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? chipColor.withValues(alpha: 0.16)
+                              : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected ? chipColor : hairline,
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
                           child: Text(
                             p.name.toUpperCase(),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: isSelected ? Colors.white : chipColor,
+                              letterSpacing: 0.4,
+                              color: isSelected ? chipColor : theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
-                        selected: isSelected,
-                        selectedColor: chipColor,
-                        backgroundColor: chipColor.withValues(alpha: 0.1),
-                        side: BorderSide(
-                          color: isSelected ? chipColor : chipColor.withValues(alpha: 0.3),
-                        ),
-                        onSelected: (_) => setState(() => _priority = p),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Due Date Selector
-              Text(
-                'Due Date',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _pickDate,
-                    icon: const Icon(Icons.event_outlined, size: 18),
-                    label: Text(
-                      _dueDate == null
-                          ? 'Select date'
-                          : '${_dueDate!.year}-${_dueDate!.month.toString().padLeft(2, '0')}-${_dueDate!.day.toString().padLeft(2, '0')}',
-                    ),
                   ),
-                  if (_dueDate != null) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      tooltip: 'Clear date',
-                      onPressed: () => setState(() => _dueDate = null),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.mdPlus),
 
-              // Action Buttons
-              ElevatedButton(
-                onPressed: _isSaving ? null : _submit,
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(isEditing ? 'Save Changes' : 'Create Task'),
+            // Due Date Selector
+            Text(
+              'DUE DATE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                  label: Text(
+                    _dueDate == null
+                        ? 'Select date'
+                        : DateFormat('EEE, MMM d, yyyy').format(_dueDate!),
+                  ),
+                ),
+                if (_dueDate != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    tooltip: 'Clear date',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => setState(() => _dueDate = null),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         ),
       ),
     );

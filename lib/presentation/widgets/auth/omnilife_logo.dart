@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../pages/auth/auth_theme_tokens.dart';
 
-/// OmniLife branded emblem and typography.
+/// OmniLife handcrafted emblem and typography.
 ///
-/// Features:
-/// - Interconnected gradient emblem (Indigo -> Teal -> AI Violet)
-/// - "OmniLife" title
-/// - "Your life, connected." tagline
+/// Strips out artificial SaaS gradient glow and replaces with a bold,
+/// confident terracotta emblem and crisp editorial typography.
 class OmniLifeLogo extends StatelessWidget {
   const OmniLifeLogo({
     super.key,
-    this.size = 56,
+    this.size = 52,
     this.showTagline = true,
   });
 
@@ -24,34 +22,23 @@ class OmniLifeLogo extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final primary = AuthThemeTokens.primary(isDark);
-    final teal = AuthThemeTokens.teal(isDark);
-    final ai = AuthThemeTokens.ai(isDark);
     final text = AuthThemeTokens.text(isDark);
     final textSecondary = AuthThemeTokens.textSecondary(isDark);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Glowing Gradient Emblem
+        // Confident, Flat Terracotta Emblem
         Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
+            color: primary,
             borderRadius: BorderRadius.circular(size * 0.28),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [primary, teal, ai],
-            ),
             boxShadow: [
               BoxShadow(
-                color: primary.withValues(alpha: isDark ? 0.45 : 0.30),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: teal.withValues(alpha: isDark ? 0.35 : 0.20),
-                blurRadius: 16,
+                color: primary.withValues(alpha: 0.25),
+                blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -64,13 +51,13 @@ class OmniLifeLogo extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // Brand Name
         Text(
           'OmniLife',
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
             color: text,
           ),
@@ -83,7 +70,7 @@ class OmniLifeLogo extends StatelessWidget {
             'Your life, connected.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: textSecondary,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
               letterSpacing: 0.1,
             ),
           ),

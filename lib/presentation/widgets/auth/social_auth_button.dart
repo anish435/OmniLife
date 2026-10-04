@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/app_radius.dart';
 import '../../pages/auth/auth_theme_tokens.dart';
 import '../google_sign_in_button.dart' show GoogleLogo;
 
-/// Premium social authentication button (Google).
-///
-/// Features:
-/// - Official 4-color Google logo
-/// - Hover/press micro-interactions
-/// - Integrated spinner state
-/// - Polished border matching [AuthThemeTokens]
+/// Clean social authentication button (Google).
 class SocialAuthButton extends StatelessWidget {
   const SocialAuthButton({
     super.key,
@@ -33,22 +28,20 @@ class SocialAuthButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 48,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: textColor,
-          backgroundColor: isDark
-              ? surfaceColor.withValues(alpha: 0.5)
-              : Colors.white,
+          backgroundColor: isDark ? surfaceColor : Colors.white,
           side: BorderSide(
-            color: borderColor.withValues(alpha: isDark ? 0.6 : 0.9),
-            width: 1.1,
+            color: borderColor,
+            width: 1.0,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.inputRadius,
           ),
-          elevation: isDark ? 0 : 0.5,
+          elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: isLoading
@@ -64,7 +57,7 @@ class SocialAuthButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const GoogleLogo(size: 20),
+                  const GoogleLogo(size: 18),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_radius.dart';
+import '../../../app/theme/app_semantic_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../controllers/wellness_controller.dart';
 
@@ -16,17 +19,22 @@ class WellnessPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mindful Wellness'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(56),
           child: _buildDateSelector(context, controller),
         ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator.adaptive());
         }
 
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenPadding,
+            AppSpacing.screenPadding,
+            AppSpacing.screenPadding,
+            AppSpacing.section + 56,
+          ),
           children: [
             _buildWaterIntake(context, controller),
             const SizedBox(height: AppSpacing.lg),
@@ -37,7 +45,6 @@ class WellnessPage extends StatelessWidget {
             _buildMoodCheckIn(context, controller),
             const SizedBox(height: AppSpacing.lg),
             _buildCorrelationChart(context),
-            const SizedBox(height: 100), // spacing for scrolling
           ],
         );
       }),
@@ -81,51 +88,74 @@ class WellnessPage extends StatelessWidget {
   }
 
   Widget _buildWaterIntake(BuildContext context, WellnessController controller) {
+    final theme = Theme.of(context);
+    final accent = context.semanticColors.wellness;
+
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            Text('Water Intake', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'WATER INTAKE',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Obx(() {
               final ml = controller.currentLog.value?.waterIntakeMl ?? 0;
-              final target = 2500;
+              const target = 2500;
               final progress = (ml / target).clamp(0.0, 1.0);
 
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 32),
+                    icon: const Icon(Icons.remove_circle_outline, size: 28),
                     onPressed: () => controller.updateWaterIntake(-250),
-                    color: Colors.blue,
+                    color: accent,
                   ),
                   SizedBox(
-                    height: 120,
-                    width: 120,
+                    height: 110,
+                    width: 110,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
                         CircularProgressIndicator(
                           value: progress,
-                          strokeWidth: 12,
-                          backgroundColor: Colors.blue.withValues(alpha: 0.2),
-                          color: Colors.blue,
+                          strokeWidth: 8,
+                          backgroundColor: accent.withValues(alpha: 0.15),
+                          color: accent,
                           strokeCap: StrokeCap.round,
                         ),
                         Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.water_drop, color: Colors.blue, size: 28),
+                              Icon(Icons.water_drop_outlined, color: accent, size: 24),
+                              const SizedBox(height: 2),
                               Text(
                                 '${ml}ml',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
                               ),
                               Text(
                                 'of 2.5L',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -134,9 +164,9 @@ class WellnessPage extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 32),
+                    icon: const Icon(Icons.add_circle_outline, size: 28),
                     onPressed: () => controller.updateWaterIntake(250),
-                    color: Colors.blue,
+                    color: accent,
                   ),
                 ],
               );
@@ -148,13 +178,30 @@ class WellnessPage extends StatelessWidget {
   }
 
   Widget _buildSleepTracker(BuildContext context, WellnessController controller) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sleep', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'SLEEP TRACKER',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Obx(() {
               final hours = controller.currentLog.value?.sleepDurationHours ?? 0.0;
@@ -164,8 +211,14 @@ class WellnessPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Duration'),
-                      Text('${hours.toStringAsFixed(1)} hours', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Duration', style: theme.textTheme.bodyMedium),
+                      Text(
+                        '${hours.toStringAsFixed(1)} hours',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
                     ],
                   ),
                   Slider(
@@ -173,7 +226,7 @@ class WellnessPage extends StatelessWidget {
                     min: 0,
                     max: 14,
                     divisions: 28,
-                    activeColor: Colors.indigo,
+                    activeColor: accent,
                     label: '${hours.toStringAsFixed(1)}h',
                     onChanged: (val) => controller.updateSleepDuration(val),
                   ),
@@ -189,8 +242,13 @@ class WellnessPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Quality'),
-                      Text(_getSleepQualityText(quality), style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Quality', style: theme.textTheme.bodyMedium),
+                      Text(
+                        _getSleepQualityText(quality),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                   Slider(
@@ -198,7 +256,7 @@ class WellnessPage extends StatelessWidget {
                     min: 1,
                     max: 5,
                     divisions: 4,
-                    activeColor: Colors.deepPurple,
+                    activeColor: context.semanticColors.wellness,
                     onChanged: (val) => controller.updateSleepQuality(val.toInt()),
                   ),
                 ],
@@ -222,13 +280,29 @@ class WellnessPage extends StatelessWidget {
   }
 
   Widget _buildWorkoutTracker(BuildContext context, WellnessController controller) {
+    final theme = Theme.of(context);
+
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Workout', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'WORKOUT',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Obx(() {
               final currentType = controller.currentLog.value?.workoutType ?? 'None';
@@ -255,8 +329,14 @@ class WellnessPage extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Duration'),
-                            Text('$duration min', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('Duration', style: theme.textTheme.bodyMedium),
+                            Text(
+                              '$duration min',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
                           ],
                         ),
                         Slider(
@@ -264,7 +344,7 @@ class WellnessPage extends StatelessWidget {
                           min: 0,
                           max: 180,
                           divisions: 36,
-                          activeColor: Colors.orange,
+                          activeColor: context.semanticColors.warning,
                           label: '${duration}m',
                           onChanged: (val) => controller.updateWorkoutDuration(val.toInt()),
                         ),
@@ -280,24 +360,40 @@ class WellnessPage extends StatelessWidget {
   }
 
   Widget _buildMoodCheckIn(BuildContext context, WellnessController controller) {
+    final theme = Theme.of(context);
+
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mood Check-In', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'MOOD CHECK-IN',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Obx(() {
               final score = controller.currentLog.value?.moodScore ?? 3;
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _MoodIcon(icon: Icons.sentiment_very_dissatisfied, color: Colors.red, isSelected: score == 1, onTap: () => controller.updateMoodScore(1)),
-                  _MoodIcon(icon: Icons.sentiment_dissatisfied, color: Colors.orange, isSelected: score == 2, onTap: () => controller.updateMoodScore(2)),
-                  _MoodIcon(icon: Icons.sentiment_neutral, color: Colors.amber, isSelected: score == 3, onTap: () => controller.updateMoodScore(3)),
-                  _MoodIcon(icon: Icons.sentiment_satisfied, color: Colors.lightGreen, isSelected: score == 4, onTap: () => controller.updateMoodScore(4)),
-                  _MoodIcon(icon: Icons.sentiment_very_satisfied, color: Colors.green, isSelected: score == 5, onTap: () => controller.updateMoodScore(5)),
+                  _MoodIcon(icon: Icons.sentiment_very_dissatisfied, color: AppColors.error, isSelected: score == 1, onTap: () => controller.updateMoodScore(1)),
+                  _MoodIcon(icon: Icons.sentiment_dissatisfied, color: context.semanticColors.warning, isSelected: score == 2, onTap: () => controller.updateMoodScore(2)),
+                  _MoodIcon(icon: Icons.sentiment_neutral, color: context.semanticColors.notes, isSelected: score == 3, onTap: () => controller.updateMoodScore(3)),
+                  _MoodIcon(icon: Icons.sentiment_satisfied, color: context.semanticColors.habits, isSelected: score == 4, onTap: () => controller.updateMoodScore(4)),
+                  _MoodIcon(icon: Icons.sentiment_very_satisfied, color: context.semanticColors.success, isSelected: score == 5, onTap: () => controller.updateMoodScore(5)),
                 ],
               );
             }),
@@ -308,11 +404,18 @@ class WellnessPage extends StatelessWidget {
   }
 
   Widget _buildCorrelationChart(BuildContext context) {
-    // A simplified visual for "Sleep Quality vs Productivity" correlation
-    // Since we don't have task productivity linked directly here easily without complex queries,
-    // we will show a placeholder/static conceptual view or just a nice card.
+    final theme = Theme.of(context);
+
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -320,15 +423,24 @@ class WellnessPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.auto_graph, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                Icon(Icons.auto_graph_outlined, color: theme.colorScheme.primary, size: 20),
                 const SizedBox(width: AppSpacing.sm),
-                Text('Wellness Insights', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                Text(
+                  'WELLNESS INSIGHTS',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 0.8,
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Your sleep quality directly impacts your task completion rate. On days with "Excellent" sleep, you complete 32% more tasks!',
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

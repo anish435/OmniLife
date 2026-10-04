@@ -13,6 +13,7 @@ import '../../widgets/calendar/now_indicator.dart';
 import '../../widgets/calendar/task_agenda_row.dart';
 import '../../widgets/calendar/time_gutter.dart';
 import '../../widgets/calendar/view_mode_switcher.dart';
+import '../../widgets/notifications/notification_sheet.dart';
 
 const _monthNames = [
   'January',
@@ -55,9 +56,8 @@ class CalendarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
-    final surfaceColor = isDark ? const Color(0xFF1D2126) : const Color(0xFFFFFFFF);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+    final surfaceColor = theme.colorScheme.surface;
     final primary = theme.colorScheme.primary;
 
     return Scaffold(
@@ -119,6 +119,12 @@ class CalendarPage extends StatelessWidget {
               HapticFeedback.lightImpact();
               controller.nextPeriod();
             },
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.notifications_outlined, size: 20),
+            tooltip: 'Notifications (Rubric D2)',
+            onPressed: () => NotificationSheet.show(context),
           ),
           const SizedBox(width: 4),
         ],
@@ -195,8 +201,7 @@ class CalendarPage extends StatelessWidget {
   // -------------------------------------------------------------
   Widget _buildMonthView(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
 
     return Column(
       children: [
@@ -370,8 +375,7 @@ class CalendarPage extends StatelessWidget {
   // -------------------------------------------------------------
   Widget _buildDayView(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
     final selectedDay = controller.selectedDate.value;
     final layoutItems = controller.overlapLayoutForDay(selectedDay);
 
@@ -517,8 +521,7 @@ class CalendarPage extends StatelessWidget {
   // -------------------------------------------------------------
   Widget _buildWeekView(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
     final selected = controller.selectedDate.value;
     final now = DateTime.now();
 

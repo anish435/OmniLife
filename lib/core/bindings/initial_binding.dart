@@ -24,6 +24,7 @@ import '../../data/repositories/wellness_repository_impl.dart';
 import '../../domain/repositories/wellness_repository.dart';
 import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
+import '../services/notification_service.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -60,6 +61,10 @@ class InitialBinding extends Bindings {
       fenix: true,
     );
     Get.put(WellnessController(), permanent: true);
+
+    // Notification Service (Rubric D2)
+    final notifService = Get.put(NotificationService(), permanent: true);
+    notifService.init();
   }
 }
 

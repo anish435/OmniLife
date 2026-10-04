@@ -30,7 +30,7 @@ class HabitsPage extends StatelessWidget {
             message: 'No habits yet',
             subtitle: 'Start building momentum today.',
             icon: Icons.track_changes_outlined,
-            actionLabel: '+ New Habit',
+            actionLabel: 'New Habit',
             onAction: () => CreateHabitSheet.show(context),
           );
         }
@@ -40,7 +40,12 @@ class HabitsPage extends StatelessWidget {
         return RefreshIndicator(
           onRefresh: controller.loadHabits,
           child: ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              AppSpacing.section + 56,
+            ),
             itemCount: habits.length,
             separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {

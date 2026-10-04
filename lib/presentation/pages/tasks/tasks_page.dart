@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_semantic_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../domain/entities/task.dart';
@@ -127,20 +128,25 @@ class _TasksPageState extends State<TasksPage> {
                             label: Text(label),
                             selected: isSelected,
                             onSelected: (_) => _taskController.setFilter(filter),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.chipRadius,
+                            ),
                             backgroundColor: isDark
-                                ? theme.colorScheme.surfaceContainerHighest
-                                : theme.colorScheme.surface,
-                            selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                ? theme.colorScheme.surface
+                                : theme.colorScheme.surfaceContainerLowest,
+                            selectedColor: theme.colorScheme.primary.withValues(alpha: 0.12),
                             labelStyle: TextStyle(
                               color: isSelected
                                   ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurface,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  : theme.colorScheme.onSurfaceVariant,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              fontSize: 13,
                             ),
                             side: BorderSide(
                               color: isSelected
                                   ? theme.colorScheme.primary
-                                  : theme.colorScheme.outline.withValues(alpha: 0.3),
+                                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              width: 1,
                             ),
                           ),
                         );
@@ -162,12 +168,14 @@ class _TasksPageState extends State<TasksPage> {
                   return Row(
                     children: [
                       Text(
-                        'Priority:',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        'PRIORITY',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      const SizedBox(width: AppSpacing.md),
                       _priorityFilterPill(null, 'ANY', activePriority == null),
                       _priorityFilterPill(TaskPriority.high, 'HIGH', activePriority == TaskPriority.high),
                       _priorityFilterPill(TaskPriority.medium, 'MED', activePriority == TaskPriority.medium),
@@ -177,7 +185,11 @@ class _TasksPageState extends State<TasksPage> {
                 }),
               ),
 
-              const Divider(height: 1),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
 
               // Task List Content
               Expanded(
@@ -228,6 +240,7 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Widget _priorityFilterPill(TaskPriority? priority, String label, bool isSelected) {
+    final theme = Theme.of(context);
     Color color;
     switch (priority) {
       case TaskPriority.high:
@@ -240,7 +253,7 @@ class _TasksPageState extends State<TasksPage> {
         color = AppColors.primary;
         break;
       case null:
-        color = Theme.of(context).colorScheme.onSurface;
+        color = theme.colorScheme.onSurface;
         break;
     }
 
@@ -248,23 +261,23 @@ class _TasksPageState extends State<TasksPage> {
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
         onTap: () => _taskController.setPriority(priority),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.chipRadius,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.chipRadius,
             border: Border.all(
-              color: isSelected ? color : Colors.transparent,
+              color: isSelected ? color : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? color : Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),

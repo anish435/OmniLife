@@ -39,7 +39,7 @@ class NotesPage extends GetView<NotesController> {
             message: 'No notes yet',
             subtitle: 'Capture your thoughts, ideas, and meeting notes.',
             icon: Icons.notes_outlined,
-            actionLabel: '+ New Note',
+            actionLabel: 'New Note',
             onAction: () => CreateNoteSheet.show(context),
           );
         }
@@ -49,7 +49,12 @@ class NotesPage extends GetView<NotesController> {
         return RefreshIndicator(
           onRefresh: controller.loadNotes,
           child: MasonryGridView.count(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              AppSpacing.section + 56,
+            ),
             crossAxisCount: context.width > 600 ? 3 : 2,
             mainAxisSpacing: AppSpacing.sm,
             crossAxisSpacing: AppSpacing.sm,

@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_radius.dart';
+import '../../../app/theme/app_semantic_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../domain/entities/finance_transaction.dart';
 import '../../controllers/finance_controller.dart';
 import '../../widgets/app_empty_view.dart';
+import '../../widgets/section_label.dart';
 import 'create_transaction_sheet.dart';
 
 class FinancePage extends StatelessWidget {
@@ -44,13 +48,18 @@ class FinancePage extends StatelessWidget {
                   message: 'No transactions this month',
                   subtitle: 'Start tracking your spending and income.',
                   icon: Icons.account_balance_wallet_outlined,
-                  actionLabel: '+ Add Transaction',
+                  actionLabel: 'Add Transaction',
                   onAction: () => CreateTransactionSheet.show(context),
                 );
               }
 
               return ListView(
-                padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenPadding,
+                  AppSpacing.screenPadding,
+                  AppSpacing.screenPadding,
+                  AppSpacing.section + 56,
+                ),
                 children: [
                   _buildTotalCard(context, controller),
                   const SizedBox(height: AppSpacing.lg),
@@ -58,7 +67,7 @@ class FinancePage extends StatelessWidget {
                   const SizedBox(height: AppSpacing.lg),
                   _buildBudgetProgress(context, controller),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('Recent Transactions', style: Theme.of(context).textTheme.titleLarge),
+                  const SectionLabel(title: 'RECENT TRANSACTIONS'),
                   const SizedBox(height: AppSpacing.sm),
                   ...controller.transactions.map((tx) => _buildTransactionTile(context, controller, tx)),
                 ],
@@ -97,23 +106,38 @@ class FinancePage extends StatelessWidget {
   }
 
   Widget _buildTotalCard(BuildContext context, FinanceController controller) {
+    final theme = Theme.of(context);
     final balance = controller.balance;
     final income = controller.totalIncome;
     final expense = controller.totalExpense;
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            const Text('Net Balance'),
+            Text(
+              'NET BALANCE',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               '${balance < 0 ? "-" : ""}\$${balance.abs().toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: balance >= 0 ? Colors.green : Colors.red,
-                  ),
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: balance >= 0 ? context.semanticColors.success : AppColors.error,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             Row(
@@ -121,14 +145,42 @@ class FinancePage extends StatelessWidget {
               children: [
                 Column(
                   children: [
-                    const Text('Income', style: TextStyle(color: Colors.grey)),
-                    Text('\$${income.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    Text(
+                      'INCOME',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        letterSpacing: 0.6,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${income.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: context.semanticColors.success,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
                 Column(
                   children: [
-                    const Text('Expense', style: TextStyle(color: Colors.grey)),
-                    Text('\$${expense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    Text(
+                      'EXPENSE',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        letterSpacing: 0.6,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${expense.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -140,17 +192,18 @@ class FinancePage extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context, FinanceController controller) {
+    final theme = Theme.of(context);
     final expensesByCategory = controller.expensesByCategory;
     if (expensesByCategory.isEmpty) return const SizedBox.shrink();
 
     final colors = [
-      Colors.blue,
-      Colors.red,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.brown,
+      context.semanticColors.tasks,
+      context.semanticColors.calendar,
+      context.semanticColors.notes,
+      context.semanticColors.habits,
+      context.semanticColors.finance,
+      context.semanticColors.wellness,
+      context.semanticColors.warning,
     ];
 
     double total = controller.totalExpense;
@@ -178,11 +231,18 @@ class FinancePage extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 12, height: 12, color: color),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${category.name.capitalizeFirst} (${(amount / total * 100).toStringAsFixed(1)}%)',
-                  style: const TextStyle(fontSize: 12),
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                 ),
               ],
             ),
@@ -194,17 +254,31 @@ class FinancePage extends StatelessWidget {
     });
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Expense Distribution', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'EXPENSE DISTRIBUTION',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.chipRadius,
               child: SizedBox(
-                height: 24,
+                height: 20,
                 child: Row(children: segments),
               ),
             ),
@@ -217,16 +291,31 @@ class FinancePage extends StatelessWidget {
   }
 
   Widget _buildBudgetProgress(BuildContext context, FinanceController controller) {
+    final theme = Theme.of(context);
     final expensesByCategory = controller.expensesByCategory;
     if (expensesByCategory.isEmpty) return const SizedBox.shrink();
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Budgets', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'BUDGETS',
+              style: theme.textTheme.labelSmall?.copyWith(
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             ...controller.budgets.keys.map((cat) {
               if (cat == TransactionCategory.income) return const SizedBox.shrink();
@@ -234,11 +323,11 @@ class FinancePage extends StatelessWidget {
               final limit = controller.budgets[cat]!;
               final percent = (spent / limit).clamp(0.0, 1.0);
               
-              Color progressColor = Theme.of(context).colorScheme.primary;
+              Color progressColor = theme.colorScheme.primary;
               if (percent >= 1.0) {
-                progressColor = Colors.red;
+                progressColor = AppColors.error;
               } else if (percent >= 0.8) {
-                progressColor = Colors.orange;
+                progressColor = context.semanticColors.warning;
               }
 
               return Padding(
@@ -249,15 +338,27 @@ class FinancePage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(cat.name.capitalizeFirst!),
-                        Text('\$${spent.toStringAsFixed(0)} / \$${limit.toStringAsFixed(0)}'),
+                        Text(
+                          cat.name.capitalizeFirst!,
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          '\$${spent.toStringAsFixed(0)} / \$${limit.toStringAsFixed(0)}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: percent,
-                      color: progressColor,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 6,
+                        color: progressColor,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      ),
                     ),
                   ],
                 ),
@@ -270,31 +371,48 @@ class FinancePage extends StatelessWidget {
   }
 
   Widget _buildTransactionTile(BuildContext context, FinanceController controller, FinanceTransaction tx) {
+    final theme = Theme.of(context);
+    final isIncome = tx.isIncome;
+    final amountColor = isIncome ? context.semanticColors.success : theme.colorScheme.onSurface;
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: tx.isIncome ? Colors.green.withValues(alpha: 0.2) : Theme.of(context).colorScheme.primaryContainer,
+        radius: 18,
+        backgroundColor: isIncome
+            ? context.semanticColors.success.withValues(alpha: 0.15)
+            : theme.colorScheme.surfaceContainerHighest,
         child: Icon(
           _getIconForCategory(tx.category), 
-          color: tx.isIncome ? Colors.green : Theme.of(context).colorScheme.primary,
+          size: 18,
+          color: isIncome ? context.semanticColors.success : theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      title: Text(tx.title),
+      title: Text(
+        tx.title,
+        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+      ),
       subtitle: Row(
         children: [
-          Text(DateFormat('MMM d, yyyy').format(tx.date)),
+          Text(
+            DateFormat('MMM d, yyyy').format(tx.date),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           if (tx.receiptUrl != null) ...[
             const SizedBox(width: 8),
-            const Icon(Icons.receipt, size: 14, color: Colors.grey),
+            Icon(Icons.receipt, size: 14, color: theme.colorScheme.onSurfaceVariant),
           ],
         ],
       ),
       trailing: Text(
-        '${tx.isIncome ? "+" : "-"}\$${tx.amount.toStringAsFixed(2)}',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: tx.isIncome ? Colors.green : Theme.of(context).colorScheme.error,
-            ),
+        '${isIncome ? "+" : "-"}\$${tx.amount.toStringAsFixed(2)}',
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: amountColor,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
       onLongPress: () {
         showDialog(

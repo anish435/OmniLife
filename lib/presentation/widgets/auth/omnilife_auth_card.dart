@@ -1,9 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../pages/auth/auth_theme_tokens.dart';
 
-/// Modern glassmorphic authentication card with entrance fade and scale animations.
+/// Refined authentication card with 20px radius, clean hairline border,
+/// and subtle entrance animation.
 class OmniLifeAuthCard extends StatefulWidget {
   const OmniLifeAuthCard({
     super.key,
@@ -29,7 +30,7 @@ class _OmniLifeAuthCardState extends State<OmniLifeAuthCard>
     super.initState();
     _cardAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 300),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -37,15 +38,15 @@ class _OmniLifeAuthCardState extends State<OmniLifeAuthCard>
       curve: Curves.easeOutCubic,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.94, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.98, end: 1.0).animate(
       CurvedAnimation(
         parent: _cardAnimController,
-        curve: Curves.easeOutBack,
+        curve: Curves.easeOutCubic,
       ),
     );
 
     final binding = WidgetsBinding.instance.runtimeType.toString();
-    if (binding.contains('Test')) {
+    if (Get.testMode || binding.contains('Test')) {
       _cardAnimController.value = 1.0;
     } else {
       _cardAnimController.forward();
@@ -65,7 +66,6 @@ class _OmniLifeAuthCardState extends State<OmniLifeAuthCard>
 
     final surfaceColor = AuthThemeTokens.surface(isDark);
     final borderColor = AuthThemeTokens.border(isDark);
-    final primaryColor = AuthThemeTokens.primary(isDark);
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -75,43 +75,27 @@ class _OmniLifeAuthCardState extends State<OmniLifeAuthCard>
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: widget.maxWidth),
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                color: surfaceColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: borderColor, width: 1),
                 boxShadow: [
-                  // Primary ambient glow
                   BoxShadow(
-                    color: primaryColor.withValues(alpha: isDark ? 0.12 : 0.07),
-                    blurRadius: 36,
-                    offset: const Offset(0, 14),
-                  ),
-                  // Deep drop shadow
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                    blurRadius: 24,
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                    blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: surfaceColor.withValues(alpha: isDark ? 0.82 : 0.92),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: borderColor.withValues(alpha: isDark ? 0.55 : 0.75),
-                        width: 1.2,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 32,
-                    ),
-                    child: widget.child,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 28,
                   ),
+                  child: widget.child,
                 ),
               ),
             ),

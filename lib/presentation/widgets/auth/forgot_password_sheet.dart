@@ -83,20 +83,20 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
           child: Container(
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border.all(
-                color: border.withValues(alpha: 0.6),
+                color: border,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, -6),
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 36),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -105,9 +105,9 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                   // Drag Handle
                   Center(
                     child: Container(
-                      width: 44,
+                      width: 36,
                       height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
+                      margin: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
                         color: border,
                         borderRadius: BorderRadius.circular(2),
@@ -119,20 +119,20 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                     // Success View
                     Center(
                       child: Container(
-                        width: 64,
-                        height: 64,
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
                           color: AuthThemeTokens.teal(isDark).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.mark_email_read_outlined,
-                          size: 32,
+                          size: 28,
                           color: AuthThemeTokens.teal(isDark),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
                     Text(
                       'Check your inbox',
                       style: theme.textTheme.titleLarge?.copyWith(
@@ -156,7 +156,7 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                         backgroundColor: primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: const Text('Back to Sign In'),
@@ -241,9 +241,9 @@ class _ForgotPasswordSheetState extends State<ForgotPasswordSheet> {
                         style: FilledButton.styleFrom(
                           backgroundColor: primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: loading

@@ -2,15 +2,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../pages/auth/auth_theme_tokens.dart';
 
-/// Full-screen ambient animated background for OmniLife authentication.
+/// Full-screen ambient background for OmniLife authentication.
 ///
-/// Features:
-/// 1. Subtle, performant animated dot-grid canvas painter using Indigo/Teal/AI tones.
-/// 2. Soft, multi-stop radial glows/vignettes centered behind the auth card.
-/// 3. Respects reduced-motion accessibility settings and test runners.
-/// 4. Proper lifecycle and memory management with [SingleTickerProviderStateMixin].
+/// Strips out artificial violet/indigo neon glows and uses a warm,
+/// restrained terracotta ambiance on warm paper / carbon slate.
 class OmniLifeAuthBackground extends StatefulWidget {
   const OmniLifeAuthBackground({
     super.key,
@@ -73,61 +71,36 @@ class _OmniLifeAuthBackgroundState extends State<OmniLifeAuthBackground>
 
     final bgColor = AuthThemeTokens.background(isDark);
     final primaryColor = AuthThemeTokens.primary(isDark);
-    final tealColor = AuthThemeTokens.teal(isDark);
-    final aiColor = AuthThemeTokens.ai(isDark);
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Ambient gradient base
+          // 1. Solid ambient background
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: bgColor,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF0F172A),
-                          const Color(0xFF131D38),
-                          const Color(0xFF0F172A),
-                        ]
-                      : [
-                          const Color(0xFFF8F9FC),
-                          const Color(0xFFEEF2FF),
-                          const Color(0xFFF0FDFA),
-                        ],
-                ),
-              ),
-            ),
+            child: ColoredBox(color: bgColor),
           ),
 
-          // 2. Dual soft radial glows behind card
+          // 2. Subtle, low-contrast warm radial glow behind card
           Positioned.fill(
             child: CustomPaint(
-              painter: _RadialGlowPainter(
+              painter: _WarmRadialGlowPainter(
                 primaryColor: primaryColor,
-                tealColor: tealColor,
-                aiColor: aiColor,
                 isDark: isDark,
               ),
             ),
           ),
 
-          // 3. Native particle / dot-grid animation
+          // 3. Low-contrast restrained dot grid
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _controller,
               builder: (context, _) {
                 return CustomPaint(
-                  painter: _DotGridPainter(
+                  painter: _EditorialDotGridPainter(
                     animationProgress: _controller.value,
                     primaryColor: primaryColor,
-                    tealColor: tealColor,
-                    aiColor: aiColor,
                     isDark: isDark,
                   ),
                 );
@@ -135,29 +108,7 @@ class _OmniLifeAuthBackgroundState extends State<OmniLifeAuthBackground>
             ),
           ),
 
-          // 4. Subtle perimeter vignette
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 1.1,
-                    colors: [
-                      Colors.transparent,
-                      Colors.transparent,
-                      isDark
-                          ? const Color(0xFF0F172A).withValues(alpha: 0.6)
-                          : const Color(0xFFF8F9FC).withValues(alpha: 0.5),
-                    ],
-                    stops: const [0.0, 0.6, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 5. Auth Card & Content
+          // 4. Content
           widget.child,
         ],
       ),
@@ -165,155 +116,93 @@ class _OmniLifeAuthBackgroundState extends State<OmniLifeAuthBackground>
   }
 }
 
-/// Paints the multi-stop soft ambient halos centered in the viewport.
-class _RadialGlowPainter extends CustomPainter {
-  const _RadialGlowPainter({
+class _WarmRadialGlowPainter extends CustomPainter {
+  const _WarmRadialGlowPainter({
     required this.primaryColor,
-    required this.tealColor,
-    required this.aiColor,
     required this.isDark,
   });
 
   final Color primaryColor;
-  final Color tealColor;
-  final Color aiColor;
   final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) * 0.55;
 
-    // Primary central glow
-    final primaryRadius = math.min(size.width, size.height) * 0.65;
-    final primaryPaint = Paint()
+    final paint = Paint()
       ..shader = RadialGradient(
         colors: [
-          primaryColor.withValues(alpha: isDark ? 0.22 : 0.16),
           primaryColor.withValues(alpha: isDark ? 0.08 : 0.05),
           Colors.transparent,
         ],
-        stops: const [0.0, 0.5, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: primaryRadius));
-    canvas.drawCircle(center, primaryRadius, primaryPaint);
-
-    // Subtle offset Teal accent glow
-    final tealCenter = Offset(
-      center.dx + size.width * 0.18,
-      center.dy - size.height * 0.15,
-    );
-    final tealRadius = math.min(size.width, size.height) * 0.45;
-    final tealPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          tealColor.withValues(alpha: isDark ? 0.14 : 0.10),
-          Colors.transparent,
-        ],
         stops: const [0.0, 1.0],
-      ).createShader(Rect.fromCircle(center: tealCenter, radius: tealRadius));
-    canvas.drawCircle(tealCenter, tealRadius, tealPaint);
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
 
-    // Subtle offset Violet/AI accent glow
-    final aiCenter = Offset(
-      center.dx - size.width * 0.18,
-      center.dy + size.height * 0.16,
-    );
-    final aiRadius = math.min(size.width, size.height) * 0.45;
-    final aiPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          aiColor.withValues(alpha: isDark ? 0.14 : 0.09),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 1.0],
-      ).createShader(Rect.fromCircle(center: aiCenter, radius: aiRadius));
-    canvas.drawCircle(aiCenter, aiRadius, aiPaint);
+    canvas.drawCircle(center, radius, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _RadialGlowPainter oldDelegate) =>
-      oldDelegate.isDark != isDark ||
-      oldDelegate.primaryColor != primaryColor ||
-      oldDelegate.tealColor != tealColor;
+  bool shouldRepaint(covariant _WarmRadialGlowPainter oldDelegate) =>
+      oldDelegate.isDark != isDark || oldDelegate.primaryColor != primaryColor;
 }
 
-/// Native performant CustomPainter that renders a geometric pulsing dot-grid
-/// with subtle wave dynamics and coordinated Indigo, Teal, and Violet tones.
-class _DotGridPainter extends CustomPainter {
-  const _DotGridPainter({
+class _EditorialDotGridPainter extends CustomPainter {
+  const _EditorialDotGridPainter({
     required this.animationProgress,
     required this.primaryColor,
-    required this.tealColor,
-    required this.aiColor,
     required this.isDark,
   });
 
   final double animationProgress;
   final Color primaryColor;
-  final Color tealColor;
-  final Color aiColor;
   final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const spacing = 32.0;
+    const spacing = 36.0;
     final cols = (size.width / spacing).ceil() + 1;
     final rows = (size.height / spacing).ceil() + 1;
-
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
-    final maxDist = math.sqrt(centerX * centerX + centerY * centerY);
 
     final dotPaint = Paint()..style = PaintingStyle.fill;
     final twoPi = 2 * math.pi;
     final timePhase = animationProgress * twoPi;
+
+    final baseDotColor = isDark
+        ? AppColors.darkHairline.withValues(alpha: 0.6)
+        : AppColors.lightHairline.withValues(alpha: 0.8);
 
     for (int r = 0; r < rows; r++) {
       final y = r * spacing;
       for (int c = 0; c < cols; c++) {
         final x = c * spacing;
 
-        final dx = x - centerX;
-        final dy = y - centerY;
-        final dist = math.sqrt(dx * dx + dy * dy);
-        final normDist = dist / maxDist;
+        final wave = math.sin(timePhase + (x / 180.0) + (y / 220.0));
+        final waveVal = (wave + 1.0) / 2.0;
 
-        // Wave formula combining radial distance and continuous time phase
-        final wave = math.sin(timePhase + (x / 140.0) + (y / 180.0) - (normDist * 3.0));
-        final waveVal = (wave + 1.0) / 2.0; // 0.0 .. 1.0
-
-        // Determine subtle radius and opacity
-        final isAccent = (r * 7 + c * 13) % 9 == 0;
-        final isSubAccent = (r * 11 + c * 5) % 11 == 0;
+        final isAccent = (r * 7 + c * 13) % 15 == 0;
 
         double radius;
-        double opacity;
-        Color dotColor;
+        Color color;
 
         if (isAccent) {
-          // Subtle glowing accent dot (Indigo / Teal)
-          radius = 1.6 + (waveVal * 1.4);
-          opacity = isDark ? (0.25 + waveVal * 0.45) : (0.18 + waveVal * 0.35);
-          dotColor = Color.lerp(primaryColor, tealColor, waveVal)!;
-        } else if (isSubAccent) {
-          // Violet/AI secondary dot
-          radius = 1.3 + (waveVal * 1.1);
-          opacity = isDark ? (0.18 + waveVal * 0.35) : (0.14 + waveVal * 0.28);
-          dotColor = Color.lerp(aiColor, primaryColor, waveVal)!;
+          radius = 1.4;
+          color = primaryColor.withValues(
+            alpha: isDark ? (0.15 + waveVal * 0.15) : (0.12 + waveVal * 0.12),
+          );
         } else {
-          // Standard background grid dot
-          radius = 1.0 + (waveVal * 0.5);
-          opacity = isDark ? (0.06 + waveVal * 0.12) : (0.05 + waveVal * 0.09);
-          dotColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          radius = 1.0;
+          color = baseDotColor;
         }
 
-        dotPaint.color = dotColor.withValues(alpha: opacity.clamp(0.0, 1.0));
+        dotPaint.color = color;
         canvas.drawCircle(Offset(x, y), radius, dotPaint);
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _DotGridPainter oldDelegate) =>
+  bool shouldRepaint(covariant _EditorialDotGridPainter oldDelegate) =>
       oldDelegate.animationProgress != animationProgress ||
       oldDelegate.isDark != isDark;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/app_radius.dart';
 import '../../pages/auth/auth_theme_tokens.dart';
 
 enum AuthMode { signIn, signUp }
@@ -23,18 +24,17 @@ class AuthToggle extends StatelessWidget {
     final primary = AuthThemeTokens.primary(isDark);
     final inputFill = AuthThemeTokens.inputFill(isDark);
     final textSecondary = AuthThemeTokens.textSecondary(isDark);
+    final border = AuthThemeTokens.border(isDark);
 
     final isSignIn = currentMode == AuthMode.signIn;
 
     return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
+      height: 42,
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: inputFill.withValues(alpha: isDark ? 0.8 : 0.7),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AuthThemeTokens.border(isDark).withValues(alpha: 0.5),
-        ),
+        color: inputFill,
+        borderRadius: AppRadius.smallRadius,
+        border: Border.all(color: border, width: 1),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -45,21 +45,15 @@ class AuthToggle extends StatelessWidget {
               // Animated sliding indicator
               AnimatedAlign(
                 alignment: isSignIn ? Alignment.centerLeft : Alignment.centerRight,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOutCubic,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
                 child: Container(
                   width: pillWidth,
                   height: double.infinity,
                   decoration: BoxDecoration(
                     color: isDark ? AuthThemeTokens.surface(true) : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 0.8),
                   ),
                 ),
               ),
@@ -69,15 +63,15 @@ class AuthToggle extends StatelessWidget {
                 children: [
                   Expanded(
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       onTap: () => onChanged(AuthMode.signIn),
                       child: Center(
                         child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 180),
                           style: theme.textTheme.labelLarge!.copyWith(
                             fontWeight: isSignIn ? FontWeight.w700 : FontWeight.w500,
                             color: isSignIn ? primary : textSecondary,
-                            fontSize: 14,
+                            fontSize: 13.5,
                           ),
                           child: const Text('Sign In'),
                         ),
@@ -86,15 +80,15 @@ class AuthToggle extends StatelessWidget {
                   ),
                   Expanded(
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       onTap: () => onChanged(AuthMode.signUp),
                       child: Center(
                         child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 180),
                           style: theme.textTheme.labelLarge!.copyWith(
                             fontWeight: !isSignIn ? FontWeight.w700 : FontWeight.w500,
                             color: !isSignIn ? primary : textSecondary,
-                            fontSize: 14,
+                            fontSize: 13.5,
                           ),
                           child: const Text('Sign Up'),
                         ),

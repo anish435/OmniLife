@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/app_radius.dart';
 import '../../pages/auth/auth_theme_tokens.dart';
 
 /// Reusable premium styled text input field for OmniLife authentication.
-///
-/// Features:
-/// - Smooth focus outline with primary color glow
-/// - Obscure/reveal toggle button with animation for password inputs
-/// - Leading icons for email, password, and identity
-/// - Full validation support via [TextFormField]
 class OmniLifeTextField extends StatefulWidget {
   const OmniLifeTextField({
     super.key,
@@ -55,100 +50,86 @@ class _OmniLifeTextFieldState extends State<OmniLifeTextField> {
     final textColor = AuthThemeTokens.text(isDark);
     final textSecondary = AuthThemeTokens.textSecondary(isDark);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextFormField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          enabled: widget.enabled,
-          obscureText: widget.isPassword ? _obscureText : false,
-          keyboardType: widget.keyboardType,
-          textInputAction: widget.textInputAction,
-          onFieldSubmitted: widget.onFieldSubmitted,
-          validator: widget.validator,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: textColor,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            labelText: widget.labelText,
-            hintText: widget.hintText,
-            hintStyle: TextStyle(
-              color: textSecondary.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
-            labelStyle: TextStyle(
-              color: textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-            floatingLabelStyle: TextStyle(
-              color: primaryColor,
-              fontWeight: FontWeight.w600,
-            ),
-            filled: true,
-            fillColor: inputFill.withValues(alpha: isDark ? 0.7 : 0.6),
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    size: 20,
-                    color: textSecondary,
-                  )
-                : null,
-            suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      size: 20,
-                      color: textSecondary,
-                    ),
-                    tooltip: _obscureText ? 'Show password' : 'Hide password',
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  )
-                : null,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: borderColor.withValues(alpha: isDark ? 0.6 : 0.7),
-                width: 1.0,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: primaryColor,
-                width: 1.8,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: theme.colorScheme.error,
-                width: 1.2,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: theme.colorScheme.error,
-                width: 1.8,
-              ),
-            ),
-          ),
+    return TextFormField(
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      enabled: widget.enabled,
+      obscureText: widget.isPassword ? _obscureText : false,
+      keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      onFieldSubmitted: widget.onFieldSubmitted,
+      validator: widget.validator,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: textColor,
+        fontWeight: FontWeight.w500,
+      ),
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        hintText: widget.hintText,
+        hintStyle: TextStyle(
+          color: textSecondary.withValues(alpha: 0.6),
+          fontSize: 14,
         ),
-      ],
+        labelStyle: TextStyle(
+          color: textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.w600,
+        ),
+        filled: true,
+        fillColor: inputFill,
+        prefixIcon: widget.prefixIcon != null
+            ? Icon(
+                widget.prefixIcon,
+                size: 20,
+                color: textSecondary,
+              )
+            : null,
+        suffixIcon: widget.isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscureText
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  size: 20,
+                  color: textSecondary,
+                ),
+                tooltip: _obscureText ? 'Show password' : 'Hide password',
+                onPressed: () {
+                  setState(() {
+                    _obscureText = !_obscureText;
+                  });
+                },
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppRadius.inputRadius,
+          borderSide: BorderSide(color: borderColor, width: 1.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.inputRadius,
+          borderSide: BorderSide(color: borderColor, width: 1.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.inputRadius,
+          borderSide: BorderSide(color: primaryColor, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.inputRadius,
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.inputRadius,
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
+        ),
+      ),
     );
   }
 }

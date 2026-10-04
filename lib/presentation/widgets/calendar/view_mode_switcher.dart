@@ -17,9 +17,8 @@ class ViewModeSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
-    final surfaceColor = isDark ? const Color(0xFF1D2126) : const Color(0xFFFFFFFF);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+    final surfaceColor = theme.colorScheme.surface;
 
     return Container(
       height: 34,

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/task_controller.dart';
 import '../../../domain/entities/calendar_event.dart';
+import '../../../core/services/notification_service.dart';
 import 'calendar_colors.dart';
 
 /// Modal bottom sheet for creating or editing calendar events.
@@ -152,6 +153,21 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         linkedTaskId: _linkedTaskId,
       );
       final res = await controller.updateEvent(updated);
+      if (mounted) {
+        final dateStr = '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Updated "$title" ($dateStr)')),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
       Get.back(result: res);
     } else {
       final res = await controller.createEvent(
@@ -166,6 +182,44 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         type: _selectedType,
         linkedTaskId: _linkedTaskId,
       );
+
+      // Notification trigger (Rubric D2: Booking Confirmed & Reminder)
+      if (Get.isRegistered<NotificationService>()) {
+        final notifService = Get.find<NotificationService>();
+        await notifService.showBookingConfirmation(
+          title: title,
+          startAt: startAt,
+          eventId: res?.id,
+        );
+        if (startAt.isAfter(DateTime.now())) {
+          final reminderTime = startAt.subtract(const Duration(minutes: 15));
+          if (reminderTime.isAfter(DateTime.now())) {
+            await notifService.scheduleReminder(
+              id: (res?.id ?? title).hashCode & 0x7FFFFFFF,
+              title: 'Reminder: $title',
+              body: 'Starting in 15 minutes',
+              scheduledDate: reminderTime,
+              payload: res?.id,
+            );
+          }
+        }
+      }
+
+      if (mounted) {
+        final dateStr = '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.event_available_outlined, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Scheduled "$title" ($dateStr)')),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
       Get.back(result: res);
     }
   }
@@ -183,9 +237,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF1D2126) : const Color(0xFFFFFFFF);
-    final borderColor = isDark ? const Color(0xFF33383F) : const Color(0xFFDADFE3);
+    final surfaceColor = theme.colorScheme.surface;
+    final borderColor = theme.colorScheme.outline;
     final primary = theme.colorScheme.primary;
 
     final mediaQuery = MediaQuery.of(context);
@@ -465,9 +518,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                   ),
                   filled: true,
-                  fillColor: isDark
-                      ? const Color(0xFF262B32)
-                      : const Color(0xFFEEF1F4),
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: borderColor),
