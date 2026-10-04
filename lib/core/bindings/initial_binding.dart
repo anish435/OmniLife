@@ -10,6 +10,9 @@ import '../../presentation/controllers/app_controller.dart';
 import '../../presentation/controllers/auth_controller.dart';
 import '../../presentation/controllers/calendar_controller.dart';
 import '../../presentation/controllers/task_controller.dart';
+import '../../presentation/controllers/notes_controller.dart';
+import '../../data/repositories/note_repository_impl.dart';
+import '../../domain/repositories/note_repository.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -28,6 +31,9 @@ class InitialBinding extends Bindings {
 
     Get.lazyPut<CalendarRepository>(() => CalendarRepositoryImpl(), fenix: true);
     Get.put(CalendarController(), permanent: true);
+
+    Get.lazyPut<NoteRepository>(() => NoteRepositoryImpl(), fenix: true);
+    Get.put(NotesController(), permanent: true);
   }
 }
 

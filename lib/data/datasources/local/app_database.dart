@@ -11,9 +11,10 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._();
 
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
   static const tasksTable = 'tasks';
   static const eventsTable = 'calendar_events';
+  static const notesTable = 'notes';
 
   static const _createTasksTableSql = '''
     CREATE TABLE $tasksTable (
@@ -51,6 +52,22 @@ class AppDatabase {
     ON $eventsTable (user_id, start_at)
   ''';
 
+  static const _createNotesTableSql = '''
+    CREATE TABLE $notesTable (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      color_tag TEXT NOT NULL DEFAULT 'default',
+      is_pinned INTEGER NOT NULL DEFAULT 0,
+      is_archived INTEGER NOT NULL DEFAULT 0,
+      tags TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  ''';
+
   Database? _database;
 
   Future<Database> get database async {
@@ -71,11 +88,15 @@ class AppDatabase {
         await db.execute(_createTasksTableSql);
         await db.execute(_createEventsTableSql);
         await db.execute(_createEventsIndexSql);
+        await db.execute(_createNotesTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute(_createEventsTableSql);
           await db.execute(_createEventsIndexSql);
+        }
+        if (oldVersion < 3) {
+          await db.execute(_createNotesTableSql);
         }
       },
     );
@@ -85,5 +106,7 @@ class AppDatabase {
     await db.execute(_createTasksTableSql);
     await db.execute(_createEventsTableSql);
     await db.execute(_createEventsIndexSql);
+    await db.execute(_createNotesTableSql);
   }
 }
+

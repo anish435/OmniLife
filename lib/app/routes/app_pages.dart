@@ -12,6 +12,10 @@ import '../../presentation/pages/calendar/calendar_page.dart';
 import '../../presentation/pages/dashboard/dashboard_page.dart';
 import '../../presentation/pages/splash/splash_page.dart';
 import '../../presentation/pages/tasks/tasks_page.dart';
+import '../../presentation/pages/notes/notes_page.dart';
+import '../../presentation/controllers/notes_controller.dart';
+import '../../domain/repositories/note_repository.dart';
+import '../../data/repositories/note_repository_impl.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -68,6 +72,18 @@ class AppPages {
         }
         if (!Get.isRegistered<CalendarController>()) {
           Get.put(CalendarController(), permanent: true);
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.notes,
+      page: () => const NotesPage(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<NoteRepository>()) {
+          Get.lazyPut<NoteRepository>(() => NoteRepositoryImpl(), fenix: true);
+        }
+        if (!Get.isRegistered<NotesController>()) {
+          Get.put(NotesController(), permanent: true);
         }
       }),
     ),
