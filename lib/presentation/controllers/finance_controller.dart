@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../core/services/analytics_service.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart';
@@ -145,6 +146,10 @@ class FinanceController extends GetxController {
           transactions[idx] = created;
         }
       }
+      AnalyticsService.instance.logEvent(
+        AnalyticsEvents.transactionAdded,
+        {'kind': isIncome ? 'income' : 'expense'},
+      );
       return created;
     } catch (e) {
       if (isCurrentView) {

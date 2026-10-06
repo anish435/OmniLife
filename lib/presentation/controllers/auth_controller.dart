@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../app/routes/app_routes.dart';
 import '../../core/errors/failures.dart';
+import '../../core/services/analytics_service.dart';
+import '../../core/services/user_session_coordinator.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 /// Application-level authentication state, per docs/architecture.md §3
@@ -50,6 +52,7 @@ class AuthController extends GetxController {
 
   void _onAuthStateChanged(AppUser? user) {
     currentUser.value = user;
+    UserSessionCoordinator.instance.onUserChanged(user?.uid);
     status.value = user == null
         ? AuthStatus.unauthenticated
         : AuthStatus.authenticated;
@@ -86,15 +89,23 @@ class AuthController extends GetxController {
 
   final isGoogleLoading = false.obs;
 
-  Future<void> register({required String email, required String password}) =>
-      _runAuthAction(
-        () => _authRepository!.register(email: email, password: password),
-      );
+  Future<void> register({required String email, required String password}) async {
+    await _runAuthAction(
+      () => _authRepository!.register(email: email, password: password),
+    );
+    if (errorMessage.value == null && _authRepository != null) {
+      AnalyticsService.instance.logEvent(AnalyticsEvents.signUp, {'method': 'email'});
+    }
+  }
 
-  Future<void> login({required String email, required String password}) =>
-      _runAuthAction(
-        () => _authRepository!.login(email: email, password: password),
-      );
+  Future<void> login({required String email, required String password}) async {
+    await _runAuthAction(
+      () => _authRepository!.login(email: email, password: password),
+    );
+    if (errorMessage.value == null && _authRepository != null) {
+      AnalyticsService.instance.logEvent(AnalyticsEvents.login, {'method': 'email'});
+    }
+  }
 
   Future<void> signInWithGoogle() async {
     if (_authRepository == null) {
@@ -107,6 +118,7 @@ class AuthController extends GetxController {
     isGoogleLoading.value = true;
     try {
       await _authRepository!.signInWithGoogle();
+      AnalyticsService.instance.logEvent(AnalyticsEvents.login, {'method': 'google'});
     } on AuthFailure catch (e) {
       if (e.code == 'popup-closed-by-user' ||
           e.code == 'canceled' ||
@@ -124,6 +136,8 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     if (_authRepository == null) return;
+    // Remove this device's push token while still signed in.
+    await UserSessionCoordinator.instance.beforeSignOut(currentUser.value?.uid);
     await _authRepository!.logout();
   }
 

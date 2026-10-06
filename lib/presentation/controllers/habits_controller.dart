@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../core/services/analytics_service.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -158,6 +159,9 @@ class HabitsController extends GetxController {
 
     try {
       await _habitRepository.toggleHabitLog(habitId, dateStr);
+      if (!wasCompleted) {
+        AnalyticsService.instance.logEvent(AnalyticsEvents.habitCompleted);
+      }
     } catch (e) {
       // Revert
       if (wasCompleted) {

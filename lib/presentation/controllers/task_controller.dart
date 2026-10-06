@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../core/services/analytics_service.dart';
 
 import '../../core/errors/failures.dart';
 import '../../domain/entities/task.dart';
@@ -101,6 +102,7 @@ class TaskController extends GetxController {
       if (index != -1) {
         tasks[index] = created;
       }
+      AnalyticsService.instance.logEvent(AnalyticsEvents.taskCreated);
       return created;
     } on Failure catch (e) {
       tasks.removeWhere((t) => t.id == newTask.id);
@@ -129,6 +131,7 @@ class TaskController extends GetxController {
     try {
       if (updated.completed) {
         await _taskRepository.completeTask(id);
+        AnalyticsService.instance.logEvent(AnalyticsEvents.taskCompleted);
       } else {
         await _taskRepository.updateTask(updated);
       }
