@@ -423,6 +423,21 @@ class DashboardPage extends StatelessWidget {
                             countLabel: 'Active',
                             onTap: () => Get.toNamed(AppRoutes.wellness),
                           ),
+                          // --- Maps / GPS and Sensors modules (additive) ---
+                          ModuleTile(
+                            name: 'Map',
+                            icon: Icons.place_outlined,
+                            accentColor: AppColors.moduleFinance,
+                            countLabel: 'Places & distance',
+                            onTap: () => Get.toNamed(AppRoutes.map),
+                          ),
+                          ModuleTile(
+                            name: 'Sensors',
+                            icon: Icons.directions_walk,
+                            accentColor: AppColors.moduleHabits,
+                            countLabel: 'Steps & motion',
+                            onTap: () => Get.toNamed(AppRoutes.sensors),
+                          ),
                         ],
                       );
                     },

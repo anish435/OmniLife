@@ -11,4 +11,8 @@ abstract final class AppRoutes {
   static const habits = '/habits';
   static const finance = '/finance';
   static const wellness = '/wellness';
+
+  // --- Maps / GPS and Sensors modules (additive) ---
+  static const map = '/map';
+  static const sensors = '/sensors';
 }

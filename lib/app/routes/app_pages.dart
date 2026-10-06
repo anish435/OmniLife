@@ -30,6 +30,10 @@ import '../../domain/repositories/wellness_repository.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
 import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
+// --- Maps / GPS and Sensors modules (additive imports) ---
+import '../../core/bindings/location_sensor_bindings.dart';
+import '../../presentation/pages/map/map_page.dart';
+import '../../presentation/pages/sensors/sensors_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -142,6 +146,17 @@ class AppPages {
           Get.put(WellnessController(), permanent: true);
         }
       }),
+    ),
+    // --- Maps / GPS and Sensors modules (additive) ---
+    GetPage(
+      name: AppRoutes.map,
+      page: () => const MapPage(),
+      binding: BindingsBuilder(registerMapDependencies),
+    ),
+    GetPage(
+      name: AppRoutes.sensors,
+      page: () => const SensorsPage(),
+      binding: BindingsBuilder(registerSensorDependencies),
     ),
   ];
 }
