@@ -26,6 +26,7 @@ import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
 import '../services/notification_service.dart';
 import 'pulse_bindings.dart';
+import 'focus_push_bindings.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -69,6 +70,10 @@ class InitialBinding extends Bindings {
     // Notification Service (Rubric D2)
     final notifService = Get.put(NotificationService(), permanent: true);
     notifService.init();
+
+    // START: focus mode + push messaging
+    registerFocusAndPushDependencies();
+    // END: focus mode + push messaging
   }
 }
 

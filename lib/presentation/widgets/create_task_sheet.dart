@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -92,7 +93,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         );
         await controller.updateTask(updated);
       } else {
-        await controller.createTask(
+        final created = await controller.createTask(
           title: title,
           description: desc,
           priority: _priority,
@@ -105,6 +106,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           await notifService.showTaskReminder(
             title: title,
             dueDate: _dueDate,
+            taskId: created?.id,
           );
           if (_dueDate != null && _dueDate!.isAfter(DateTime.now())) {
             await notifService.scheduleReminder(
@@ -112,6 +114,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               title: 'Reminder: $title',
               body: 'Task is due now',
               scheduledDate: _dueDate!,
+              payload: created == null ? null : 'task:${created.id}',
             );
           }
         }
@@ -148,7 +151,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         }
       }
     } catch (e, stack) {
-      debugPrint('CreateTaskSheet submit error: $e\n$stack');
+      if (kDebugMode) debugPrint('CreateTaskSheet submit error: $e\n$stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

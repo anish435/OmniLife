@@ -33,6 +33,8 @@ import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
 import '../../presentation/pages/pulse/insights_page.dart';
 import '../../presentation/pages/pulse/pulse_page.dart';
 import '../../presentation/pages/pulse/sleep_page.dart';
+import '../../core/bindings/focus_push_bindings.dart';
+import '../../presentation/pages/focus/focus_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -151,5 +153,12 @@ class AppPages {
     GetPage(name: AppRoutes.pulse, page: () => const PulsePage()),
     GetPage(name: AppRoutes.insights, page: () => const InsightsPage()),
     GetPage(name: AppRoutes.sleep, page: () => const SleepPage()),
+    // START: focus mode
+    GetPage(
+      name: AppRoutes.focus,
+      page: () => const FocusPage(),
+      binding: BindingsBuilder(registerFocusDependencies),
+    ),
+    // END: focus mode
   ];
 }

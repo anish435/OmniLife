@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import '../../core/services/analytics_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/note.dart';
@@ -212,6 +213,7 @@ class NotesController extends GetxController {
       if (idx != -1) {
         notes[idx] = created;
       }
+      AnalyticsService.instance.logEvent(AnalyticsEvents.noteCreated);
       return created;
     } catch (e) {
       notes.removeWhere((e) => e.id == newNote.id);

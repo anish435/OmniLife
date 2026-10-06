@@ -17,9 +17,8 @@ Future<bool> initializeFirebase() async {
     );
     return true;
   } catch (error, stackTrace) {
-    debugPrint('Firebase initialization failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
+    if (kDebugMode) debugPrint('Firebase initialization failed: $error');
+    if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
     return false;
   }
 }
-

@@ -14,4 +14,7 @@ abstract final class AppRoutes {
   static const pulse = '/pulse';
   static const insights = '/insights';
   static const sleep = '/sleep';
+  // START: focus mode
+  static const focus = '/focus';
+  // END: focus mode
 }

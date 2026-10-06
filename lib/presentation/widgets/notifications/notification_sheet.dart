@@ -9,6 +9,7 @@ import '../../../core/services/notification_service.dart';
 import '../../../domain/entities/app_notification.dart';
 import '../app_bottom_sheet_frame.dart';
 import '../empty_state.dart';
+import 'push_settings_section.dart';
 
 /// Modal bottom sheet displaying recent notifications and demo triggers (Rubric D2).
 class NotificationSheet extends StatelessWidget {
@@ -116,6 +117,9 @@ class NotificationSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.mdPlus),
+
+          // Push notification opt-in and topics
+          const PushSettingsSection(),
 
           // 2. Notification List Header
           Row(
