@@ -62,6 +62,12 @@ dependencies:
   firebase_crashlytics: ^5.4.0
   shared_preferences: ^2.5.6
   crypto: ^3.0.7
+  geolocator: ^14.1.1
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  sensors_plus: ^7.1.1
+  pedometer: ^4.2.0
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

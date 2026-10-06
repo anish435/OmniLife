@@ -35,6 +35,10 @@ import '../../presentation/pages/pulse/pulse_page.dart';
 import '../../presentation/pages/pulse/sleep_page.dart';
 import '../../core/bindings/focus_push_bindings.dart';
 import '../../presentation/pages/focus/focus_page.dart';
+// --- Maps / GPS and Sensors modules (additive imports) ---
+import '../../core/bindings/location_sensor_bindings.dart';
+import '../../presentation/pages/map/map_page.dart';
+import '../../presentation/pages/sensors/sensors_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -160,5 +164,16 @@ class AppPages {
       binding: BindingsBuilder(registerFocusDependencies),
     ),
     // END: focus mode
+    // --- Maps / GPS and Sensors modules (additive) ---
+    GetPage(
+      name: AppRoutes.map,
+      page: () => const MapPage(),
+      binding: BindingsBuilder(registerMapDependencies),
+    ),
+    GetPage(
+      name: AppRoutes.sensors,
+      page: () => const SensorsPage(),
+      binding: BindingsBuilder(registerSensorDependencies),
+    ),
   ];
 }

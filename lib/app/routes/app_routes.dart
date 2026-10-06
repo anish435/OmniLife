@@ -17,4 +17,8 @@ abstract final class AppRoutes {
   // START: focus mode
   static const focus = '/focus';
   // END: focus mode
+
+  // --- Maps / GPS and Sensors modules (additive) ---
+  static const map = '/map';
+  static const sensors = '/sensors';
 }
