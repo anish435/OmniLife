@@ -2,157 +2,217 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/theme/app_radius.dart';
+import '../../../app/theme/app_semantic_colors.dart';
+import '../../../app/theme/app_spacing.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/usecases/habits/habit_streaks.dart';
+import '../../controllers/goals_controller.dart';
 import '../../controllers/habits_controller.dart';
 import '../../widgets/calendar/calendar_colors.dart';
-import 'create_habit_sheet.dart';
+import '../../widgets/habits/animated_check_circle.dart';
+import '../../widgets/habits/goal_tile.dart';
+import 'habit_detail_page.dart';
 
 class HabitCard extends StatelessWidget {
   const HabitCard({super.key, required this.habit});
 
   final Habit habit;
 
+  /// Human label for the current streak, in the unit the habit counts in.
+  static String streakLabel(Habit habit) {
+    final n = habit.currentStreak;
+    switch (habit.frequency) {
+      case HabitFrequency.weekly:
+        return '$n wk streak';
+      case HabitFrequency.specificDays:
+        return '$n in a row';
+      case HabitFrequency.daily:
+        return '$n day streak';
+    }
+  }
+
+  static Color colorFor(BuildContext context, Habit habit) =>
+      habit.colorTag != 'default'
+      ? CalendarColors.getTag(habit.colorTag).color
+      : context.semanticColors.habits;
+
+  /// Shows a confirmation after a day is toggled, never overlapping a prior one.
+  static Future<void> toggleDay(
+    BuildContext context,
+    HabitsController controller,
+    Habit habit,
+    DateTime date,
+  ) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final result = await controller.toggleHabitLog(habit.id, date);
+    if (result == null) {
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Could not update habit')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final semantic = context.semanticColors;
     final controller = Get.find<HabitsController>();
-    final tag = CalendarColors.getTag(habit.colorTag);
+    final color = colorFor(context, habit);
 
-    // Calculate last 7 days
-    final today = DateTime.now();
-    final last7Days = List.generate(7, (index) => today.subtract(Duration(days: 6 - index)));
+    final today = controller.today;
+    final last7Days = List.generate(
+      7,
+      (index) => DateTime(today.year, today.month, today.day - (6 - index)),
+    );
+    final todayKey = HabitStreaks.dateKey(today);
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(color: semantic.hairline),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => CreateHabitSheet.show(context, habitToEdit: habit),
-        child: Column(
-          children: [
-            if (habit.colorTag != 'default')
-              Container(
-                height: 4,
-                width: double.infinity,
-                color: tag.color,
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          habit.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+        onTap: () => HabitDetailPage.open(context, habit.id),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: color, width: 3.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        habit.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_fire_department,
-                              size: 16,
-                              color: habit.currentStreak > 0 ? Colors.orange : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${habit.currentStreak}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: habit.currentStreak > 0 ? Colors.orange : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (habit.description.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
-                      habit.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      streakLabel(habit),
+                      key: ValueKey('streak-${habit.id}'),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: habit.currentStreak > 0
+                            ? theme.colorScheme.primary
+                            : semantic.mutedText,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: last7Days.map((date) {
-                      return Obx(() {
-                        final isCompleted = controller.isHabitCompleted(habit.id, date);
-                        final isToday = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(today);
-                        
-                        return GestureDetector(
-                          onTap: () => controller.toggleHabitLog(habit.id, date),
-                          child: Column(
+                ),
+                if (habit.description.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    habit.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: semantic.mutedText,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.smPlus),
+                Row(
+                  children: [
+                    for (final date in last7Days)
+                      Expanded(
+                        child: Obx(() {
+                          final done = controller.isHabitCompleted(
+                            habit.id,
+                            date,
+                          );
+                          final key = HabitStreaks.dateKey(date);
+                          return Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 DateFormat('E').format(date).substring(0, 1),
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: isToday 
-                                      ? theme.colorScheme.primary 
-                                      : theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: isToday ? FontWeight.bold : null,
+                                  color: key == todayKey
+                                      ? theme.colorScheme.primary
+                                      : semantic.tertiaryText,
+                                  fontWeight: key == todayKey
+                                      ? FontWeight.w700
+                                      : null,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isCompleted 
-                                      ? (habit.colorTag != 'default' ? tag.color : theme.colorScheme.primary)
-                                      : theme.colorScheme.surfaceContainerHighest,
-                                  shape: BoxShape.circle,
-                                  border: isToday && !isCompleted ? Border.all(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                                    width: 2,
-                                  ) : null,
-                                ),
-                                child: isCompleted 
-                                    ? Icon(
-                                        Icons.check, 
-                                        size: 18, 
-                                        color: habit.colorTag != 'default' ? Colors.white : theme.colorScheme.onPrimary,
-                                      )
-                                    : null,
+                              AnimatedCheckCircle(
+                                key: ValueKey('day-${habit.id}-$key'),
+                                completed: done,
+                                fillColor: color,
+                                highlightToday: key == todayKey,
+                                semanticLabel:
+                                    '${habit.title}, '
+                                    '${DateFormat('EEEE d MMMM').format(date)}',
+                                onTap: () =>
+                                    toggleDay(context, controller, habit, date),
                               ),
                             ],
-                          ),
-                        );
-                      });
-                    }).toList(),
-                  ),
-                ],
-              ),
+                          );
+                        }),
+                      ),
+                  ],
+                ),
+                _LinkedGoals(habitId: habit.id),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _LinkedGoals extends StatelessWidget {
+  const _LinkedGoals({required this.habitId});
+
+  final String habitId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<GoalsController>()) return const SizedBox.shrink();
+    final goalsController = Get.find<GoalsController>();
+    return Obx(() {
+      final goals = goalsController.goalsForHabit(habitId);
+      if (goals.isEmpty) return const SizedBox.shrink();
+      final theme = Theme.of(context);
+      final semantic = context.semanticColors;
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.smPlus),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final g in goals)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Goal: ${g.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: semantic.mutedText,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    MilestoneProgress(goal: g),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    });
   }
 }

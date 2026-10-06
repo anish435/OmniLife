@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/note.dart';
 import '../../domain/repositories/note_repository.dart';
+import '../../domain/usecases/notes/note_search_ranker.dart';
 import '../datasources/local/local_note_data_source.dart';
 import '../datasources/remote/firestore_paths.dart';
 import '../datasources/remote/user_scoped_firestore_datasource.dart';
@@ -11,9 +12,8 @@ class NoteRepositoryImpl implements NoteRepository {
   NoteRepositoryImpl({
     LocalNoteDataSource? localDataSource,
     UserScopedFirestoreDataSource? remoteDataSource,
-  })  : _localDataSource = localDataSource ?? LocalNoteDataSource(),
-        _remoteDataSource =
-            remoteDataSource ?? UserScopedFirestoreDataSource();
+  }) : _localDataSource = localDataSource ?? LocalNoteDataSource(),
+       _remoteDataSource = remoteDataSource ?? UserScopedFirestoreDataSource();
 
   final LocalNoteDataSource _localDataSource;
   final UserScopedFirestoreDataSource _remoteDataSource;
@@ -23,12 +23,22 @@ class NoteRepositoryImpl implements NoteRepository {
   void _syncToRemote(String userId, NoteModel model) {
     if (kIsWeb) {
       _remoteDataSource
-          .set(userId, FirestoreCollections.notes, model.id, model.toFirestoreMap())
+          .set(
+            userId,
+            FirestoreCollections.notes,
+            model.id,
+            model.toFirestoreMap(),
+          )
           .catchError((_) {});
     } else {
       // In a real app, we'd add to sync_queue. For now, best-effort.
       _remoteDataSource
-          .set(userId, FirestoreCollections.notes, model.id, model.toFirestoreMap())
+          .set(
+            userId,
+            FirestoreCollections.notes,
+            model.id,
+            model.toFirestoreMap(),
+          )
           .catchError((_) {});
     }
   }
@@ -53,7 +63,24 @@ class NoteRepositoryImpl implements NoteRepository {
           userId,
           FirestoreCollections.notes,
         );
-        final notes = docs.map(NoteModel.fromMap).where((e) => !e.isArchived).toList();
+        final remote = docs.map(NoteModel.fromMap).toList();
+        // Remote wins, but notes created locally that have not synced yet
+        // (offline / timeout) must not vanish from the list.
+        final merged = <String, NoteModel>{
+          for (final n in _memoryCache.values.where((e) => e.userId == userId))
+            n.id: n,
+          for (final n in remote)
+            if ((_memoryCache[n.id]?.updatedAt ?? n.updatedAt).isAfter(
+              n.updatedAt,
+            ))
+              n.id: _memoryCache[n.id]!
+            else
+              n.id: n,
+        };
+        _memoryCache
+          ..removeWhere((_, v) => v.userId == userId)
+          ..addAll(merged);
+        final notes = merged.values.where((e) => !e.isArchived).toList();
         notes.sort((a, b) {
           if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
           return b.updatedAt.compareTo(a.updatedAt);
@@ -63,7 +90,9 @@ class NoteRepositoryImpl implements NoteRepository {
         }
         return notes;
       } catch (_) {
-        return _memoryCache.values.where((e) => !e.isArchived && e.userId == userId).toList();
+        return _memoryCache.values
+            .where((e) => !e.isArchived && e.userId == userId)
+            .toList();
       }
     }
 
@@ -71,7 +100,7 @@ class NoteRepositoryImpl implements NoteRepository {
     for (final n in localNotes) {
       _memoryCache[n.id] = n;
     }
-    
+
     // Background remote sync omitted for brevity, local is source of truth on mobile
     return localNotes;
   }
@@ -84,14 +113,18 @@ class NoteRepositoryImpl implements NoteRepository {
           userId,
           FirestoreCollections.notes,
         );
-        final notes = docs.map(NoteModel.fromMap).where((e) => e.isArchived).toList();
-        notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        for (final n in notes) {
+        for (final n in docs.map(NoteModel.fromMap)) {
           _memoryCache[n.id] = n;
         }
+        final notes = _memoryCache.values
+            .where((e) => e.isArchived && e.userId == userId)
+            .toList();
+        notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         return notes;
       } catch (_) {
-        return _memoryCache.values.where((e) => e.isArchived && e.userId == userId).toList();
+        return _memoryCache.values
+            .where((e) => e.isArchived && e.userId == userId)
+            .toList();
       }
     }
 
@@ -146,15 +179,11 @@ class NoteRepositoryImpl implements NoteRepository {
 
   @override
   Future<List<Note>> searchNotes(String userId, String query) async {
-    final q = query.toLowerCase();
-    
-    // Naive local search for now. Real FTS5 would be via SQLite.
-    final all = _memoryCache.values.where((e) => e.userId == userId).toList();
-    return all.where((note) {
-      if (note.title.toLowerCase().contains(q)) return true;
-      if (note.content.toLowerCase().contains(q)) return true;
-      if (note.tags.any((t) => t.toLowerCase().contains(q))) return true;
-      return false;
-    }).toList();
+    final active = await getNotes(userId);
+    final archived = await getArchivedNotes(userId);
+    return NoteSearchRanker.rank([
+      ...active,
+      ...archived,
+    ], query).map((r) => r.note).toList();
   }
 }
