@@ -14,6 +14,8 @@ abstract final class FirestoreCollections {
   static const expenses = 'expenses';
   static const wellness = 'wellness';
   static const conversations = 'conversations';
+  static const devices = 'devices';
+  static const focusSessions = 'focus_sessions';
 }
 
 /// Builds the Firestore path for a user-owned subcollection, e.g.

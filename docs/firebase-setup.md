@@ -75,3 +75,24 @@ To complete the wiring, you (the project owner) need to:
 
 No fake/placeholder credentials have been added to this repository —
 none of the above can be fabricated safely.
+
+## 6. Push notifications, Analytics and Crashlytics
+
+- **Push (FCM) on Android/iOS** needs no extra build flag. Permission is
+  requested only when the user switches "Push notifications" on in the
+  notifications sheet. Device tokens are stored at
+  `users/{uid}/devices/{sha256(token)}` and removed on logout.
+- **Push on web** is off unless you build with your public VAPID key
+  (Firebase console, Project settings, Cloud Messaging, Web Push
+  certificates):
+  `flutter build web --dart-define=FCM_VAPID_KEY=<key>`. The service worker
+  is `web/firebase-messaging-sw.js` and uses the web config values from
+  `lib/firebase_options.dart`. The key is never stored in the repository.
+- **Notification payloads** (local and FCM `data`) route with `kind` or
+  `kind:id`: `task`, `habit`, `calendar`, `focus`, `note`. FCM data keys:
+  `route` (or `type`) and optional `id`.
+- **Analytics and Crashlytics** collect only in release builds. To test
+  them in debug, set `kTelemetryInDebug = true` in
+  `lib/core/config/telemetry_config.dart`. Crashlytics is mobile only. After
+  adding the Crashlytics Gradle plugin, run one release build so the mapping
+  upload is configured.
