@@ -22,19 +22,18 @@ import '../models/life_event_model.dart';
 class LifeEventRepositoryImpl implements LifeEventRepository {
   LifeEventRepositoryImpl({
     required this.sync,
-    LocalLifeEventDataSource? local,
+    this.local,
     LifeEventRemoteDataSource? remote,
     bool? useLocalDb,
     DateTime Function()? now,
     String Function()? newId,
-  }) : _local = local,
-       _remote = remote ?? FirestoreLifeEventRemoteDataSource(),
+  }) : _remote = remote ?? FirestoreLifeEventRemoteDataSource(),
        _useLocalDb = useLocalDb ?? !kIsWeb,
        _now = now ?? DateTime.now,
        _newId = newId ?? (() => const Uuid().v4());
 
   final SyncEngine sync;
-  final LocalLifeEventDataSource? _local;
+  final LocalLifeEventDataSource? local;
   final LifeEventRemoteDataSource _remote;
   final bool _useLocalDb;
   final DateTime Function() _now;
@@ -43,7 +42,7 @@ class LifeEventRepositoryImpl implements LifeEventRepository {
   final _changes = StreamController<void>.broadcast();
   final Map<String, LifeEventModel> _session = {};
 
-  LocalLifeEventDataSource get _db => _local ?? LocalLifeEventDataSource();
+  LocalLifeEventDataSource get _db => local ?? LocalLifeEventDataSource();
 
   @override
   Stream<void> get changes => _changes.stream;

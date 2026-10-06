@@ -54,6 +54,7 @@ class SyncEngine {
     required this.connectivity,
     DateTime Function()? now,
     Random? random,
+    this.currentUid,
     this.maxAttempts = 8,
     this.baseBackoff = const Duration(seconds: 2),
     this.maxBackoff = const Duration(minutes: 5),
@@ -64,6 +65,11 @@ class SyncEngine {
   final SyncOutbox outbox;
   final RemoteWriter remote;
   final ConnectivityMonitor connectivity;
+
+  /// When provided, only the signed-in user's operations are uploaded.
+  /// Another account's queued writes stay put until that user signs in
+  /// again, instead of failing against the wrong security rules.
+  final String? Function()? currentUid;
   final DateTime Function() _now;
   final Random _random;
   final int maxAttempts;
@@ -234,7 +240,10 @@ class SyncEngine {
     final nowMs = _now().millisecondsSinceEpoch;
     final due = (await outbox.all())
         .where(
-          (o) => o.state == SyncOpState.pending && o.nextAttemptAtMs <= nowMs,
+          (o) =>
+              o.state == SyncOpState.pending &&
+              o.nextAttemptAtMs <= nowMs &&
+              _belongsToCurrentUser(o),
         )
         .toList();
     if (due.isEmpty) return;
@@ -268,6 +277,11 @@ class SyncEngine {
         if (!_online) break;
       }
     }
+  }
+
+  bool _belongsToCurrentUser(SyncOperation op) {
+    final uid = currentUid?.call();
+    return currentUid == null || (uid != null && uid == op.uid);
   }
 
   /// True when [a] and [b] describe the same write (so [a] is safe to

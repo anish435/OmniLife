@@ -227,6 +227,44 @@ void main() {
     expect(await outbox.all(), isEmpty);
   });
 
+  test('only the signed-in users writes upload; others wait', () async {
+    String? signedIn = 'u1';
+    final eng = SyncEngine(
+      outbox: outbox,
+      remote: remote,
+      connectivity: connectivity,
+      now: () => clock,
+      currentUid: () => signedIn,
+    );
+    engine = eng;
+    await eng.enqueueSet('u1', 'tasks', 'mine', {'title': 'a'});
+    await eng.enqueueSet('u2', 'tasks', 'theirs', {'title': 'b'});
+    await eng.flush();
+
+    expect(remote.applied.map((o) => o.docId), ['mine']);
+    expect((await outbox.all()).single.uid, 'u2');
+
+    signedIn = 'u2'; // the other account signs in on this device
+    await eng.flush();
+    expect(remote.applied.map((o) => o.docId), ['mine', 'theirs']);
+    expect(await outbox.all(), isEmpty);
+  });
+
+  test('nothing uploads while signed out', () async {
+    final eng = SyncEngine(
+      outbox: outbox,
+      remote: remote,
+      connectivity: connectivity,
+      now: () => clock,
+      currentUid: () => null,
+    );
+    engine = eng;
+    await eng.enqueueSet('u1', 'tasks', 't', {'title': 'a'});
+    await eng.flush();
+    expect(remote.applied, isEmpty);
+    expect(await outbox.all(), hasLength(1));
+  });
+
   group('persistence', () {
     test('KeyValueSyncOutbox survives re-instantiation', () async {
       final store = MemoryKeyValueStore();
