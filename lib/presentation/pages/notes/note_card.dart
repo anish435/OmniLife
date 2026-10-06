@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/app_radius.dart';
+import '../../../app/theme/app_semantic_colors.dart';
+import '../../../app/theme/app_spacing.dart';
 import '../../../domain/entities/note.dart';
+import '../../../domain/usecases/notes/checklist_parser.dart';
 import '../../widgets/calendar/calendar_colors.dart';
 
 class NoteCard extends StatelessWidget {
@@ -15,20 +19,36 @@ class NoteCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onTogglePin;
 
+  /// Plain-text preview of markdown: drops heading/list/emphasis markers.
+  static String snippet(String content) {
+    return content
+        .split('\n')
+        .map(
+          (l) => l
+              .replaceFirst(RegExp(r'^\s*#{1,6}\s+'), '')
+              .replaceFirstMapped(
+                RegExp(r'^\s*[-*+]\s+\[([ xX])\]\s+'),
+                (m) => m.group(1) == ' ' ? '[ ] ' : '[x] ',
+              )
+              .replaceFirst(RegExp(r'^\s*[-*+]\s+'), '- ')
+              .replaceAll(RegExp(r'[*_`]+'), ''),
+        )
+        .where((l) => l.trim().isNotEmpty && !l.trim().startsWith('~~~'))
+        .join('\n');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final semantic = context.semanticColors;
     final tag = CalendarColors.getTag(note.colorTag);
+    final progress = ChecklistParser.progress(note.content);
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        borderRadius: AppRadius.cardRadius,
+        side: BorderSide(color: semantic.hairline, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -37,12 +57,9 @@ class NoteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (note.colorTag != 'default')
-              Container(
-                height: 4,
-                color: tag.color,
-              ),
+              Container(height: 3, color: tag.color),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.smPlus),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -60,53 +77,90 @@ class NoteCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
+                      const SizedBox(width: AppSpacing.xs),
+                      InkResponse(
                         onTap: onTogglePin,
-                        child: Icon(
-                          note.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                          size: 16,
-                          color: note.isPinned 
-                              ? theme.colorScheme.primary 
-                              : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                        radius: 18,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xs),
+                          child: Icon(
+                            note.isPinned
+                                ? Icons.push_pin
+                                : Icons.push_pin_outlined,
+                            semanticLabel: note.isPinned
+                                ? 'Unpin note'
+                                : 'Pin note',
+                            size: 16,
+                            color: note.isPinned
+                                ? theme.colorScheme.primary
+                                : semantic.tertiaryText,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (note.content.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                  if (note.content.trim().isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xs + 2),
                     Text(
-                      note.content,
+                      snippet(note.content),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: semantic.mutedText,
                       ),
                       maxLines: 5,
-                      overflow: TextOverflow.fade,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  if (note.tags.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: note.tags.map((t) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '#$t',
-                          style: const TextStyle(fontSize: 10),
-                        ),
-                      )).toList(),
+                  if (progress != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '${progress.done} of ${progress.total} done',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: semantic.tertiaryText,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      if (note.category.isNotEmpty &&
+                          note.category != 'General')
+                        _Pill(label: note.category, filled: true),
+                      for (final t in note.tags) _Pill(label: '#$t'),
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, this.filled = false});
+
+  final String label;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final semantic = context.semanticColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: filled ? semantic.accentSoft : null,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: semantic.hairline),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall
+            ?.copyWith(color: semantic.mutedText),
       ),
     );
   }
