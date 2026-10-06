@@ -5,8 +5,8 @@ import 'app_database.dart';
 
 class LocalHabitDataSource {
   LocalHabitDataSource({Future<Database> Function()? databaseProvider})
-      : _databaseProvider =
-            databaseProvider ?? (() => AppDatabase.instance.database);
+    : _databaseProvider =
+          databaseProvider ?? (() => AppDatabase.instance.database);
 
   final Future<Database> Function() _databaseProvider;
 
@@ -43,6 +43,12 @@ class LocalHabitDataSource {
 
   Future<bool> deleteHabit(String id) async {
     final db = await _databaseProvider();
+    // Explicit, in case foreign keys are off on this connection.
+    await db.delete(
+      AppDatabase.habitLogsTable,
+      where: 'habit_id = ?',
+      whereArgs: [id],
+    );
     final count = await db.delete(
       AppDatabase.habitsTable,
       where: 'id = ?',

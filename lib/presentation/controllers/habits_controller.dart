@@ -1,14 +1,29 @@
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/habit.dart';
 import '../../domain/repositories/habit_repository.dart';
+import '../../domain/usecases/habits/habit_streaks.dart';
 import 'auth_controller.dart';
+import 'goals_controller.dart';
 
 class HabitsController extends GetxController {
-  final _habitRepository = Get.find<HabitRepository>();
-  final _authController = Get.find<AuthController>();
+  HabitsController({
+    HabitRepository? habitRepository,
+    AuthController? authController,
+    DateTime Function()? clock,
+  }) : _injectedRepository = habitRepository,
+       _injectedAuth = authController,
+       _clock = clock ?? DateTime.now;
+
+  final HabitRepository? _injectedRepository;
+  final AuthController? _injectedAuth;
+  final DateTime Function() _clock;
+
+  HabitRepository get _habitRepository =>
+      _injectedRepository ?? Get.find<HabitRepository>();
+  AuthController get _authController =>
+      _injectedAuth ?? Get.find<AuthController>();
 
   final habits = <Habit>[].obs;
   // Map of habitId -> list of log dates ('YYYY-MM-DD')
@@ -18,6 +33,9 @@ class HabitsController extends GetxController {
   final errorMessage = Rx<String?>(null);
 
   String get _currentUserId => _authController.currentUser.value?.uid ?? '';
+
+  /// Local calendar day, from the injected clock.
+  DateTime get today => _clock();
 
   @override
   void onInit() {
@@ -29,24 +47,26 @@ class HabitsController extends GetxController {
   }
 
   Future<void> loadHabits() async {
-    if (_currentUserId.isEmpty) return;
-    
+    if (_currentUserId.isEmpty) {
+      habits.clear();
+      habitLogs.clear();
+      return;
+    }
+
     isLoading.value = true;
     errorMessage.value = null;
     try {
       final loaded = await _habitRepository.getHabits(_currentUserId);
       habits.assignAll(loaded);
+      habitLogs.removeWhere((id, _) => !loaded.any((h) => h.id == id));
 
-      // Load logs for each habit
-      for (final habit in habits) {
-        if (!habitLogs.containsKey(habit.id)) {
-          habitLogs[habit.id] = <String>[].obs;
-        }
+      // Load logs for each habit, then derive streaks from them.
+      for (final habit in loaded) {
         final logs = await _habitRepository.getHabitLogs(habit.id);
-        habitLogs[habit.id]!.assignAll(logs.map((e) => e.date));
-        
-        // Recalculate streak
-        _recalculateStreak(habit);
+        (habitLogs[habit.id] ??= <String>[].obs).assignAll(
+          logs.where((e) => e.isCompleted).map((e) => e.date),
+        );
+        await _syncStreaks(habit.id);
       }
     } catch (e) {
       errorMessage.value = 'Failed to load habits: $e';
@@ -67,7 +87,7 @@ class HabitsController extends GetxController {
 
     final now = DateTime.now();
     final newHabit = Habit(
-      id: Uuid().v4(),
+      id: const Uuid().v4(),
       userId: _currentUserId,
       title: title,
       description: description,
@@ -101,16 +121,23 @@ class HabitsController extends GetxController {
     if (_currentUserId.isEmpty) return false;
 
     final updated = habit.copyWith(updatedAt: DateTime.now());
-    
+
     final idx = habits.indexWhere((e) => e.id == habit.id);
+    final previous = idx != -1 ? habits[idx] : null;
     if (idx != -1) {
       habits[idx] = updated;
     }
 
     try {
       await _habitRepository.updateHabit(updated);
+      // Frequency may have changed, so streaks may too.
+      await _syncStreaks(updated.id);
       return true;
     } catch (e) {
+      if (previous != null) {
+        final i = habits.indexWhere((x) => x.id == habit.id);
+        if (i != -1) habits[i] = previous;
+      }
       errorMessage.value = 'Failed to update habit: $e';
       return false;
     }
@@ -119,14 +146,17 @@ class HabitsController extends GetxController {
   Future<bool> deleteHabit(String id) async {
     final existingIdx = habits.indexWhere((e) => e.id == id);
     if (existingIdx == -1) return false;
-    
+
     final existing = habits[existingIdx];
     habits.removeAt(existingIdx);
-    
+
     final logs = habitLogs.remove(id);
 
     try {
       await _habitRepository.deleteHabit(id);
+      if (Get.isRegistered<GoalsController>()) {
+        await Get.find<GoalsController>().unlinkHabit(id);
+      }
       return true;
     } catch (e) {
       habits.insert(existingIdx, existing);
@@ -136,28 +166,35 @@ class HabitsController extends GetxController {
     }
   }
 
-  Future<void> toggleHabitLog(String habitId, DateTime date) async {
-    final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    
+  /// Toggles the completion of [habitId] on [date] (local calendar day).
+  ///
+  /// Returns `true` if the day is now completed, `false` if it was cleared,
+  /// and `null` if nothing changed (unknown habit, future date, or the save
+  /// failed and the change was rolled back).
+  Future<bool?> toggleHabitLog(String habitId, DateTime date) async {
+    final dateStr = HabitStreaks.dateKey(date);
+    if (HabitStreaks.dayNumberOfDate(date) >
+        HabitStreaks.dayNumberOfDate(today)) {
+      return null;
+    }
+
     final logs = habitLogs[habitId];
-    if (logs == null) return;
-    
+    if (logs == null) return null;
+
     final wasCompleted = logs.contains(dateStr);
-    
+
     // Optimistic
     if (wasCompleted) {
       logs.remove(dateStr);
     } else {
       logs.add(dateStr);
     }
-
-    final habitIdx = habits.indexWhere((e) => e.id == habitId);
-    if (habitIdx != -1) {
-      _recalculateStreak(habits[habitIdx]);
-    }
+    _recalculateInMemory(habitId);
 
     try {
       await _habitRepository.toggleHabitLog(habitId, dateStr);
+      await _persistStreaks(habitId);
+      return !wasCompleted;
     } catch (e) {
       // Revert
       if (wasCompleted) {
@@ -165,62 +202,66 @@ class HabitsController extends GetxController {
       } else {
         logs.remove(dateStr);
       }
-      if (habitIdx != -1) {
-        _recalculateStreak(habits[habitIdx]);
-      }
+      _recalculateInMemory(habitId);
       errorMessage.value = 'Failed to log habit: $e';
+      return null;
     }
   }
-  
-  void _recalculateStreak(Habit habit) {
-    final logs = habitLogs[habit.id]?.toList() ?? [];
-    if (logs.isEmpty) {
-      if (habit.currentStreak != 0 || habit.longestStreak != 0) {
-        updateHabit(habit.copyWith(currentStreak: 0));
-      }
-      return;
-    }
-    
-    logs.sort((a, b) => b.compareTo(a)); // Descending
-    
-    int current = 0;
-    int max = habit.longestStreak;
-    
-    DateTime date = DateTime.now();
-    
-    // Naive daily streak calculation
-    // If not logged today, check yesterday. If yesterday is logged, streak continues.
-    // Otherwise streak is 0.
-    final todayStr = DateFormat('yyyy-MM-dd').format(date);
-    final yesterdayStr = DateFormat('yyyy-MM-dd').format(date.subtract(const Duration(days: 1)));
-    
-    if (logs.contains(todayStr)) {
-      current = 1;
-      date = date.subtract(const Duration(days: 1));
-      while (logs.contains(DateFormat('yyyy-MM-dd').format(date))) {
-        current++;
-        date = date.subtract(const Duration(days: 1));
-      }
-    } else if (logs.contains(yesterdayStr)) {
-      current = 1;
-      date = date.subtract(const Duration(days: 2));
-      while (logs.contains(DateFormat('yyyy-MM-dd').format(date))) {
-        current++;
-        date = date.subtract(const Duration(days: 1));
-      }
-    } else {
-      current = 0;
-    }
-    
-    if (current > max) max = current;
-    
-    if (current != habit.currentStreak || max != habit.longestStreak) {
-      updateHabit(habit.copyWith(currentStreak: current, longestStreak: max));
+
+  StreakResult streaksFor(Habit habit) => HabitStreaks.compute(
+    completedDates: habitLogs[habit.id] ?? const <String>[],
+    frequency: habit.frequency,
+    specificDays: habit.specificDays,
+    targetDaysPerWeek: habit.targetDaysPerWeek,
+    today: today,
+  );
+
+  /// Updates the streak numbers on the in-memory habit so the UI reacts now.
+  void _recalculateInMemory(String habitId) {
+    final idx = habits.indexWhere((h) => h.id == habitId);
+    if (idx == -1) return;
+    final habit = habits[idx];
+    final r = streaksFor(habit);
+    if (r.current != habit.currentStreak || r.longest != habit.longestStreak) {
+      habits[idx] = habit.copyWith(
+        currentStreak: r.current,
+        longestStreak: r.longest,
+      );
     }
   }
-  
+
+  /// Recomputes streaks and stores them if they differ from what is saved.
+  Future<void> _syncStreaks(String habitId) async {
+    final before = habits.firstWhereOrNull((h) => h.id == habitId);
+    if (before == null) return;
+    _recalculateInMemory(habitId);
+    final after = habits.firstWhereOrNull((h) => h.id == habitId);
+    if (after != null &&
+        (after.currentStreak != before.currentStreak ||
+            after.longestStreak != before.longestStreak)) {
+      await _persistHabitQuietly(after);
+    }
+  }
+
+  Future<void> _persistStreaks(String habitId) async {
+    final habit = habits.firstWhereOrNull((h) => h.id == habitId);
+    if (habit != null) await _persistHabitQuietly(habit);
+  }
+
+  Future<void> _persistHabitQuietly(Habit habit) async {
+    try {
+      await _habitRepository.updateHabit(habit);
+    } catch (_) {
+      // Streaks are derived data; they are recomputed on the next load.
+    }
+  }
+
   bool isHabitCompleted(String habitId, DateTime date) {
-    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final dateStr = HabitStreaks.dateKey(date);
     return habitLogs[habitId]?.contains(dateStr) ?? false;
   }
+
+  /// Completed `yyyy-MM-dd` keys for [habitId] (reactive when read in Obx).
+  Set<String> completedDatesFor(String habitId) =>
+      (habitLogs[habitId] ?? const <String>[]).toSet();
 }
