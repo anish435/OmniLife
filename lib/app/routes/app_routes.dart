@@ -11,4 +11,7 @@ abstract final class AppRoutes {
   static const habits = '/habits';
   static const finance = '/finance';
   static const wellness = '/wellness';
+  // START: focus mode
+  static const focus = '/focus';
+  // END: focus mode
 }

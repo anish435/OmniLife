@@ -423,6 +423,13 @@ class DashboardPage extends StatelessWidget {
                             countLabel: 'Active',
                             onTap: () => Get.toNamed(AppRoutes.wellness),
                           ),
+                          ModuleTile(
+                            name: 'Focus',
+                            icon: Icons.timer_outlined,
+                            accentColor: AppColors.accentTerracottaDark,
+                            countLabel: 'Timer',
+                            onTap: () => Get.toNamed(AppRoutes.focus),
+                          ),
                         ],
                       );
                     },

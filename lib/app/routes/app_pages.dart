@@ -30,6 +30,8 @@ import '../../domain/repositories/wellness_repository.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
 import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
+import '../../core/bindings/focus_push_bindings.dart';
+import '../../presentation/pages/focus/focus_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -143,5 +145,12 @@ class AppPages {
         }
       }),
     ),
+    // START: focus mode
+    GetPage(
+      name: AppRoutes.focus,
+      page: () => const FocusPage(),
+      binding: BindingsBuilder(registerFocusDependencies),
+    ),
+    // END: focus mode
   ];
 }
