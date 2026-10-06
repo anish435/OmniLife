@@ -30,6 +30,9 @@ import '../../domain/repositories/wellness_repository.dart';
 import '../../data/repositories/wellness_repository_impl.dart';
 import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
+import '../../presentation/pages/pulse/insights_page.dart';
+import '../../presentation/pages/pulse/pulse_page.dart';
+import '../../presentation/pages/pulse/sleep_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -143,5 +146,10 @@ class AppPages {
         }
       }),
     ),
+
+    // OmniPulse
+    GetPage(name: AppRoutes.pulse, page: () => const PulsePage()),
+    GetPage(name: AppRoutes.insights, page: () => const InsightsPage()),
+    GetPage(name: AppRoutes.sleep, page: () => const SleepPage()),
   ];
 }

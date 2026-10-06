@@ -3,6 +3,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import '../../entities/habit.dart';
+import '../../entities/life_event.dart';
 import '../../repositories/habit_repository.dart';
 import '../../repositories/life_event_repository.dart';
 import '../../repositories/task_repository.dart';
@@ -37,7 +38,12 @@ class DayView {
     required this.timeline,
     required this.replay,
     required this.facts,
+    required this.events,
   });
+
+  /// The editable events for this day (and the evening before, so a
+  /// sleep that started yesterday resolves), for edit/undo lookups.
+  final List<LifeEvent> events;
 
   final DateTime day;
   final List<TimelineEntry> timeline;
@@ -148,6 +154,7 @@ class PulseInsightsService {
       timeline: timeline,
       replay: _replay.build(d, facts: facts, sessions: _sleep.sessions(events)),
       facts: facts,
+      events: events,
     );
   }
 
