@@ -62,14 +62,21 @@ class ModuleTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (countLabel != null)
-                    Text(
-                      countLabel!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        fontWeight: FontWeight.w600,
+                  if (countLabel != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        countLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.smPlus),

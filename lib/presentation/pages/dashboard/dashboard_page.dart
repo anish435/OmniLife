@@ -19,6 +19,9 @@ import '../../widgets/calendar/calendar_colors.dart';
 import '../../widgets/create_task_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/module_tile.dart';
+import '../../widgets/pulse/pulse_quick_log.dart';
+import '../../widgets/sync_status_indicator.dart';
+import '../../controllers/pulse_controller.dart';
 import '../../widgets/progress_ring.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/stat_tile.dart';
@@ -47,7 +50,8 @@ class DashboardPage extends StatelessWidget {
       final clean = local.replaceAll(RegExp(r'[^a-zA-Z]'), ' ').trim();
       if (clean.isNotEmpty) {
         final firstWord = clean.split(' ').first;
-        name = firstWord[0].toUpperCase() + firstWord.substring(1).toLowerCase();
+        name =
+            firstWord[0].toUpperCase() + firstWord.substring(1).toLowerCase();
       } else {
         name = 'Friend';
       }
@@ -105,11 +109,20 @@ class DashboardPage extends StatelessWidget {
     final isWide = screenWidth >= 768;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => CreateTaskSheet.show(context),
-        icon: const Icon(Icons.add, size: 20),
-        label: const Text('Add Task', style: TextStyle(fontWeight: FontWeight.w600)),
-      ),
+      floatingActionButton: screenWidth < 600
+          ? FloatingActionButton(
+              tooltip: 'Add task',
+              onPressed: () => CreateTaskSheet.show(context),
+              child: const Icon(Icons.add, size: 22),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => CreateTaskSheet.show(context),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text(
+                'Add Task',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -125,11 +138,22 @@ class DashboardPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            dateCaption.toUpperCase(),
-                            style: AppTypography.sectionLabel(
-                              theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  dateCaption.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.sectionLabel(
+                                    theme.colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Flexible(child: SyncStatusIndicator()),
+                            ],
                           ),
                           const SizedBox(height: 2),
                           Obx(() {
@@ -150,17 +174,24 @@ class DashboardPage extends StatelessWidget {
                     IconButton(
                       tooltip: 'Notifications (Rubric D2)',
                       onPressed: () => NotificationSheet.show(context),
-                      icon: Obx(() {
-                        final notifCount = Get.isRegistered<NotificationService>()
-                            ? Get.find<NotificationService>().unreadCount
-                            : 0;
-                        return Badge(
-                          isLabelVisible: notifCount > 0,
-                          label: Text('$notifCount'),
-                          backgroundColor: AppColors.primary,
-                          child: const Icon(Icons.notifications_outlined, size: 22),
-                        );
-                      }),
+                      icon: Get.isRegistered<NotificationService>()
+                          ? Obx(() {
+                              final notifCount =
+                                  Get.find<NotificationService>().unreadCount;
+                              return Badge(
+                                isLabelVisible: notifCount > 0,
+                                label: Text('$notifCount'),
+                                backgroundColor: AppColors.primary,
+                                child: const Icon(
+                                  Icons.notifications_outlined,
+                                  size: 22,
+                                ),
+                              );
+                            })
+                          : const Icon(
+                              Icons.notifications_outlined,
+                              size: 22,
+                            ),
                     ),
                     const SizedBox(width: 4),
 
@@ -190,14 +221,16 @@ class DashboardPage extends StatelessWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  appController.themeMode.value == ThemeMode.dark
+                                  appController.themeMode.value ==
+                                          ThemeMode.dark
                                       ? Icons.light_mode_outlined
                                       : Icons.dark_mode_outlined,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  appController.themeMode.value == ThemeMode.dark
+                                  appController.themeMode.value ==
+                                          ThemeMode.dark
                                       ? 'Light theme'
                                       : 'Dark theme',
                                   style: const TextStyle(fontSize: 13),
@@ -210,7 +243,11 @@ class DashboardPage extends StatelessWidget {
                             value: 'logout',
                             child: Row(
                               children: [
-                                Icon(Icons.logout, size: 18, color: AppColors.error),
+                                Icon(
+                                  Icons.logout,
+                                  size: 18,
+                                  color: AppColors.error,
+                                ),
                                 SizedBox(width: 10),
                                 Text(
                                   'Log out',
@@ -257,7 +294,10 @@ class DashboardPage extends StatelessWidget {
                   final remaining = total - completed;
 
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: AppRadius.cardRadius,
@@ -281,7 +321,9 @@ class DashboardPage extends StatelessWidget {
                                 '$completed of $total done',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -289,8 +331,8 @@ class DashboardPage extends StatelessWidget {
                                 total == 0
                                     ? 'No tasks scheduled for today.'
                                     : completed == total
-                                        ? 'All caught up for today! Well done.'
-                                        : '$remaining tasks remaining today.',
+                                    ? 'All caught up for today! Well done.'
+                                    : '$remaining tasks remaining today.',
                                 style: theme.textTheme.bodySmall,
                               ),
                             ],
@@ -300,7 +342,10 @@ class DashboardPage extends StatelessWidget {
                           onPressed: () => Get.toNamed(AppRoutes.tasks),
                           style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -317,6 +362,25 @@ class DashboardPage extends StatelessWidget {
                 }),
                 const SizedBox(height: AppSpacing.sectionGap),
 
+                // OmniPulse: one-tap capture
+                if (Get.isRegistered<PulseController>()) ...[
+                  SectionLabel(
+                    title: 'Log a moment',
+                    trailing: TextButton(
+                      onPressed: () => Get.toNamed(AppRoutes.pulse),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: const Text(
+                        'Open Pulse',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const PulseQuickLog(compact: true),
+                  const SizedBox(height: AppSpacing.sectionGap),
+                ],
+
                 // Multi-column or stacked layout based on width
                 if (isWide) ...[
                   Row(
@@ -325,7 +389,11 @@ class DashboardPage extends StatelessWidget {
                       // Left Column: Today Tasks
                       Expanded(
                         flex: 6,
-                        child: _buildTodaySection(context, taskController, hairline),
+                        child: _buildTodaySection(
+                          context,
+                          taskController,
+                          hairline,
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.lg),
                       // Right Column: Next Up & Habits/Notes
@@ -334,9 +402,19 @@ class DashboardPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _buildNextUpSection(context, calendarController, isDark, hairline),
+                            _buildNextUpSection(
+                              context,
+                              calendarController,
+                              isDark,
+                              hairline,
+                            ),
                             const SizedBox(height: AppSpacing.sectionGap),
-                            _buildStatsRow(context, notesController, habitsController, financeController),
+                            _buildStatsRow(
+                              context,
+                              notesController,
+                              habitsController,
+                              financeController,
+                            ),
                           ],
                         ),
                       ),
@@ -346,21 +424,25 @@ class DashboardPage extends StatelessWidget {
                   // Single Column (Mobile)
                   _buildTodaySection(context, taskController, hairline),
                   const SizedBox(height: AppSpacing.sectionGap),
-                  _buildNextUpSection(context, calendarController, isDark, hairline),
+                  _buildNextUpSection(
+                    context,
+                    calendarController,
+                    isDark,
+                    hairline,
+                  ),
                   const SizedBox(height: AppSpacing.sectionGap),
-                  _buildStatsRow(context, notesController, habitsController, financeController),
+                  _buildStatsRow(
+                    context,
+                    notesController,
+                    habitsController,
+                    financeController,
+                  ),
                 ],
 
                 const SizedBox(height: AppSpacing.sectionGap),
 
                 // 5. Modules Grid (2-column, no ACTIVE badges, item counts)
-                SectionLabel(
-                  title: 'Modules',
-                  trailing: Text(
-                    '6 modules connected',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
+                SectionLabel(title: 'Modules'),
                 Obx(() {
                   final taskCount = taskController.tasks.length;
                   final eventCount = calendarController.events.length;
@@ -371,13 +453,20 @@ class DashboardPage extends StatelessWidget {
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       final cols = constraints.maxWidth >= 700 ? 3 : 2;
-                      final ratio = constraints.maxWidth >= 700 ? 2.4 : 2.0;
+                      // Tile height follows content (and text scale), never width:
+                      // a width-derived ratio clipped tiles on narrow phones.
+                      final textScale =
+                          MediaQuery.textScalerOf(context).scale(14) / 14;
+                      final tileHeight =
+                          84.0 + 20.0 * textScale.clamp(1.0, 1.6);
 
-                      return GridView.count(
-                        crossAxisCount: cols,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: ratio,
+                      return GridView(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: cols,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          mainAxisExtent: tileHeight,
+                        ),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
@@ -445,6 +534,20 @@ class DashboardPage extends StatelessWidget {
                             countLabel: 'Steps & motion',
                             onTap: () => Get.toNamed(AppRoutes.sensors),
                           ),
+                          ModuleTile(
+                            name: 'Pulse',
+                            icon: Icons.timeline_outlined,
+                            accentColor: AppColors.accentTerracottaDark,
+                            countLabel: 'Timeline & replay',
+                            onTap: () => Get.toNamed(AppRoutes.pulse),
+                          ),
+                          ModuleTile(
+                            name: 'Insights',
+                            icon: Icons.insights_outlined,
+                            accentColor: AppColors.moduleCalendar,
+                            countLabel: 'Momentum & patterns',
+                            onTap: () => Get.toNamed(AppRoutes.insights),
+                          ),
                         ],
                       );
                     },
@@ -478,9 +581,15 @@ class DashboardPage extends StatelessWidget {
                     onPressed: () => Get.toNamed(AppRoutes.tasks),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                     ),
-                    child: Text('View all ($count)', style: const TextStyle(fontSize: 12)),
+                    child: Text(
+                      'View all ($count)',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   )
                 : const SizedBox.shrink();
           }),
@@ -517,11 +626,15 @@ class DashboardPage extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               itemCount: todayTasks.take(4).length,
-              separatorBuilder: (_, index) => Divider(height: 1, color: hairline),
+              separatorBuilder: (_, index) =>
+                  Divider(height: 1, color: hairline),
               itemBuilder: (context, index) {
                 final task = todayTasks[index];
                 return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 2,
+                  ),
                   leading: InkWell(
                     onTap: () => taskController.toggleTask(task.id),
                     borderRadius: BorderRadius.circular(12),
@@ -530,16 +643,24 @@ class DashboardPage extends StatelessWidget {
                       height: 22,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: task.completed ? theme.colorScheme.primary : Colors.transparent,
+                        color: task.completed
+                            ? theme.colorScheme.primary
+                            : Colors.transparent,
                         border: Border.all(
                           color: task.completed
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                              : theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                ),
                           width: 1.5,
                         ),
                       ),
                       child: task.completed
-                          ? const Icon(Icons.check, size: 14, color: Colors.white)
+                          ? const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
                   ),
@@ -550,7 +671,9 @@ class DashboardPage extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      decoration: task.completed ? TextDecoration.lineThrough : null,
+                      decoration: task.completed
+                          ? TextDecoration.lineThrough
+                          : null,
                       color: task.completed
                           ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
                           : theme.colorScheme.onSurface,
@@ -630,7 +753,8 @@ class DashboardPage extends StatelessWidget {
 
           final tag = CalendarColors.getTag(nextEvent.colorTag);
           final now = DateTime.now();
-          final isToday = nextEvent.startAt.year == now.year &&
+          final isToday =
+              nextEvent.startAt.year == now.year &&
               nextEvent.startAt.month == now.month &&
               nextEvent.startAt.day == now.day;
 
@@ -651,7 +775,10 @@ class DashboardPage extends StatelessWidget {
               onTap: () => Get.toNamed(AppRoutes.calendar),
               borderRadius: AppRadius.cardRadius,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: AppRadius.cardRadius,
@@ -692,7 +819,9 @@ class DashboardPage extends StatelessWidget {
                     Icon(
                       Icons.chevron_right,
                       size: 18,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                   ],
                 ),
@@ -710,35 +839,48 @@ class DashboardPage extends StatelessWidget {
     HabitsController? habitsController,
     FinanceController? financeController,
   ) {
-    return Obx(() {
-      final notesCount = notesController?.notes.length ?? 0;
-      final habitsCount = habitsController?.habits.length ?? 0;
-
-      return Row(
-        children: [
-          Expanded(
-            child: StatTile(
-              label: 'Notes',
-              value: '$notesCount',
-              sublabel: 'Pinned & quick notes',
-              icon: Icons.notes_outlined,
-              iconColor: AppColors.moduleNotes,
-              onTap: () => Get.toNamed(AppRoutes.notes),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: StatTile(
-              label: 'Habits',
-              value: '$habitsCount',
-              sublabel: 'Active habits',
-              icon: Icons.track_changes_outlined,
-              iconColor: AppColors.moduleHabits,
-              onTap: () => Get.toNamed(AppRoutes.habits),
-            ),
-          ),
-        ],
-      );
-    });
+    return Row(
+      children: [
+        Expanded(
+          child: notesController != null
+              ? Obx(() => StatTile(
+                    label: 'Notes',
+                    value: '${notesController.notes.length}',
+                    sublabel: 'Pinned & quick notes',
+                    icon: Icons.notes_outlined,
+                    iconColor: AppColors.moduleNotes,
+                    onTap: () => Get.toNamed(AppRoutes.notes),
+                  ))
+              : StatTile(
+                  label: 'Notes',
+                  value: '0',
+                  sublabel: 'Pinned & quick notes',
+                  icon: Icons.notes_outlined,
+                  iconColor: AppColors.moduleNotes,
+                  onTap: () => Get.toNamed(AppRoutes.notes),
+                ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: habitsController != null
+              ? Obx(() => StatTile(
+                    label: 'Habits',
+                    value: '${habitsController.habits.length}',
+                    sublabel: 'Active habits',
+                    icon: Icons.track_changes_outlined,
+                    iconColor: AppColors.moduleHabits,
+                    onTap: () => Get.toNamed(AppRoutes.habits),
+                  ))
+              : StatTile(
+                  label: 'Habits',
+                  value: '0',
+                  sublabel: 'Active habits',
+                  icon: Icons.track_changes_outlined,
+                  iconColor: AppColors.moduleHabits,
+                  onTap: () => Get.toNamed(AppRoutes.habits),
+                ),
+        ),
+      ],
+    );
   }
 }

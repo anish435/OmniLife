@@ -76,7 +76,7 @@ class _PulsePageState extends State<PulsePage> {
                   const SectionLabel(title: 'Log a moment'),
                   const PulseQuickLog(),
                   const SizedBox(height: AppSpacing.sectionGap),
-                  Obx(() => _Body(controller: c)),
+                  _Body(controller: c),
                 ],
               ),
             ),
@@ -93,7 +93,9 @@ class _Body extends StatelessWidget {
   final PulseController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Obx(() => _content(context));
+
+  Widget _content(BuildContext context) {
     final view = controller.dayView.value;
     if (controller.isLoading.value && view == null) {
       return const Padding(
