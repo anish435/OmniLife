@@ -52,6 +52,12 @@ dependencies:
   path_provider: ^2.1.6
   flutter_local_notifications: ^22.3.1
   timezone: ^0.11.1
+  geolocator: ^14.1.1
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  sensors_plus: ^7.1.1
+  pedometer: ^4.2.0
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:
