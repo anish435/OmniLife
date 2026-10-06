@@ -110,3 +110,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  # path_provider_foundation >=2.5 depends on objective_c, whose native-assets
+  # build hook mis-quotes a subprocess path on Windows when the user profile
+  # directory contains a space, which breaks `flutter test`. It only matters
+  # on iOS/macOS, which this project does not target. Remove once the hook
+  # runner bug is fixed or the repo is cloned to a path without spaces.
+  path_provider_foundation: 2.4.1
