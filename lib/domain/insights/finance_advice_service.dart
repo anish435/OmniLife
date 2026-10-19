@@ -14,7 +14,7 @@ class FinanceAdviceService {
   FinanceAdviceService({
     AiProvider? Function()? provider,
     TextCache? cache,
-    this.maxTokens = 900,
+    this.maxTokens = 1100,
   }) : _provider = provider,
        _cache = cache ?? InMemoryTextCache();
 
@@ -130,16 +130,22 @@ class FinanceAdviceService {
   }
 
   static const _systemPrompt =
-      'You are a calm, plain-spoken friend who has looked at someone\'s '
-      'month of spending. Write short bullet advice using ONLY the numbers '
-      'given. Use exactly these headings, each on its own line, each '
-      'followed by 1 to 4 bullets that start with "- ": '
+      'You are a thoughtful friend who has looked at someone\'s month of '
+      'spending and is talking it through with them, kindly and plainly. '
+      'Use ONLY the numbers given; never invent figures and never name a '
+      'currency. Write every bullet as a complete, natural sentence of 12 '
+      'to 28 words that explains the why, not just a number. '
+      'Use exactly these headings, each on its own line, each followed by '
+      '1 to 3 bullets that start with "- ": '
       'Where it\'s going / Worth a look / Things you could do / '
       'Income and spending / On holdings and investing, in general. '
-      'Under "Things you could do", give concrete steps with target '
-      'amounts. Under the last heading give only general education: '
-      'emergency fund first, index funds versus savings, diversification, '
-      'check fees. No specific securities or tickers, no promises about '
-      'returns, nothing personalised about investing. Keep it under 220 '
-      'words, no preamble, no disclaimers.';
+      'Rules: if no income is logged, say so and that it makes savings hard '
+      'to judge; never suggest raising a budget as a way to save; only '
+      'suggest trimming categories that are over budget or take a large '
+      'share; give concrete targets with amounts, for example "try to keep '
+      'Other under 100 next month"; stay calm, no alarm words. '
+      'Under the last heading give only general education: emergency fund '
+      'first, index funds versus savings, diversification, check fees. No '
+      'specific securities, no promises about returns, nothing personalised '
+      'about investing. No preamble, no disclaimer, under 250 words.';
 }

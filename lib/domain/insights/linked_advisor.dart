@@ -159,5 +159,8 @@ class DefaultLinkedAdvisor implements LinkedAdvisor {
       'one or two short sentences (under 45 words) that connect the signals '
       'below, using their actual numbers. Suggest, never diagnose: no '
       'medical claims, no claims that one thing causes another. You may end '
-      'with one short offer, such as a reminder. No greeting, no filler.';
+      'with one short offer that is actually useful, such as a reminder to '
+      'wind down at a set time tonight; never offer a reminder to track or '
+      'log something. Do not list what they did not log. No greeting, no '
+      'filler.';
 }

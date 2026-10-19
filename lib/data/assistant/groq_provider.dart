@@ -16,6 +16,7 @@ class GroqProvider implements AiProvider, TextCompleter {
     required this.apiKey,
     http.Client? client,
     this.model = 'openai/gpt-oss-20b',
+    this.adviceModel = 'openai/gpt-oss-120b',
     Uri? endpoint,
     this.temperature = 0.2,
     this.maxTokens = 400,
@@ -30,6 +31,10 @@ class GroqProvider implements AiProvider, TextCompleter {
 
   final String apiKey;
   final String model;
+
+  /// Written advice is one occasional call, so it gets the stronger model;
+  /// tool calls stay on the fast one.
+  final String adviceModel;
   final double temperature;
   final int maxTokens;
   final Duration timeout;
@@ -75,10 +80,11 @@ class GroqProvider implements AiProvider, TextCompleter {
       );
     }
     final body = jsonEncode({
-      'model': model,
-      'temperature': temperature,
+      'model': lowReasoning ? adviceModel : model,
+      'temperature': lowReasoning ? 0.4 : temperature,
       'max_tokens': maxTokens,
-      if (lowReasoning && model.contains('gpt-oss')) 'reasoning_effort': 'low',
+      if (lowReasoning && adviceModel.contains('gpt-oss'))
+        'reasoning_effort': 'low',
       'messages': [
         for (final m in messages) {'role': m.role.name, 'content': m.content},
       ],
