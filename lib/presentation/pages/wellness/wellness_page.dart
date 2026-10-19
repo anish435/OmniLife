@@ -431,7 +431,7 @@ class WellnessPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.auto_graph_outlined, color: theme.colorScheme.primary, size: 20),
+                Icon(Icons.show_chart, color: theme.colorScheme.primary, size: 20),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   'WELLNESS INSIGHTS',

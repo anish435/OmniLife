@@ -558,7 +558,7 @@ class DashboardPage extends StatelessWidget {
                           ),
                           ModuleTile(
                             name: 'Insights',
-                            icon: Icons.insights_outlined,
+                            icon: Icons.show_chart,
                             accentColor: AppColors.moduleCalendar,
                             countLabel: 'Momentum & patterns',
                             onTap: () => Get.toNamed(AppRoutes.insights),

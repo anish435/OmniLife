@@ -66,7 +66,7 @@ class _InsightsPageState extends State<InsightsPage> {
                     const SectionLabel(title: 'Patterns'),
                     if (data.patterns.isEmpty)
                       EmptyState(
-                        icon: Icons.insights_outlined,
+                        icon: Icons.show_chart,
                         message: data.hasAnyData
                             ? 'No patterns yet. They appear once there are at '
                                   'least 8 days of entries that clearly differ.'

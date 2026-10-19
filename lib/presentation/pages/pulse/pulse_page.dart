@@ -49,7 +49,7 @@ class _PulsePageState extends State<PulsePage> {
           ),
           IconButton(
             tooltip: 'Insights',
-            icon: const Icon(Icons.insights_outlined),
+            icon: const Icon(Icons.show_chart),
             onPressed: () => Get.toNamed(AppRoutes.insights),
           ),
           IconButton(
