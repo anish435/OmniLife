@@ -75,8 +75,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
     final now = DateTime.now();
 
     _titleController = TextEditingController(text: edit?.title ?? '');
-    _descriptionController =
-        TextEditingController(text: edit?.description ?? '');
+    _descriptionController = TextEditingController(
+      text: edit?.description ?? '',
+    );
 
     _selectedDate = edit?.startAt ?? widget.initialDate ?? now;
 
@@ -88,13 +89,15 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       _selectedType = edit.type;
       _linkedTaskId = edit.linkedTaskId;
     } else {
-      final initialStart = widget.initialStartTime ??
+      final initialStart =
+          widget.initialStartTime ??
           TimeOfDay(hour: (now.hour + 1) % 24, minute: 0);
       _startTime = initialStart;
-      _endTime = TimeOfDay(
-        hour: (initialStart.hour + 1) % 24,
-        minute: initialStart.minute,
-      );
+      // An hour later, but a late start must not wrap past midnight and
+      // leave the end before the start.
+      _endTime = initialStart.hour >= 23
+          ? const TimeOfDay(hour: 23, minute: 59)
+          : TimeOfDay(hour: initialStart.hour + 1, minute: initialStart.minute);
       _isAllDay = false;
       _selectedColorTag = 'blue';
       _selectedType = CalendarEventType.event;
@@ -124,7 +127,14 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         : _combineDateAndTime(_selectedDate, _startTime);
 
     final endAt = _isAllDay
-        ? DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 23, 59, 59)
+        ? DateTime(
+            _selectedDate.year,
+            _selectedDate.month,
+            _selectedDate.day,
+            23,
+            59,
+            59,
+          )
         : _combineDateAndTime(_selectedDate, _endTime);
 
     if (!_isAllDay && !endAt.isAfter(startAt)) {
@@ -154,12 +164,17 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       );
       final res = await controller.updateEvent(updated);
       if (mounted) {
-        final dateStr = '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
+        final dateStr =
+            '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Updated "$title" ($dateStr)')),
               ],
@@ -206,12 +221,17 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       }
 
       if (mounted) {
-        final dateStr = '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
+        final dateStr =
+            '${startAt.day}/${startAt.month} ${_isAllDay ? "All Day" : "${startAt.hour.toString().padLeft(2, '0')}:${startAt.minute.toString().padLeft(2, '0')}"}';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.event_available_outlined, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.event_available_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Scheduled "$title" ($dateStr)')),
               ],
@@ -284,12 +304,16 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                     child: Text(
                       'Cancel',
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ),
                   Text(
-                    widget.eventToEdit != null ? 'Edit Schedule' : 'New Schedule',
+                    widget.eventToEdit != null
+                        ? 'Edit Schedule'
+                        : 'New Schedule',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -297,7 +321,11 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                   ),
                   if (widget.eventToEdit != null)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFFEF4444)),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Color(0xFFEF4444),
+                      ),
                       tooltip: 'Delete event',
                       onPressed: _delete,
                     )
@@ -386,7 +414,10 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                     onTap: _pickInlineDate,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: borderColor, width: 1),
@@ -394,7 +425,11 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 15, color: primary),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 15,
+                            color: primary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
@@ -415,7 +450,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                         'All-day',
                         style: TextStyle(
                           fontSize: 13,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -444,7 +481,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                         onChanged: (t) => setState(() {
                           _startTime = t;
                           if (_endTime.hour < t.hour ||
-                              (_endTime.hour == t.hour && _endTime.minute <= t.minute)) {
+                              (_endTime.hour == t.hour &&
+                                  _endTime.minute <= t.minute)) {
                             _endTime = TimeOfDay(
                               hour: (t.hour + 1) % 24,
                               minute: t.minute,
@@ -518,7 +556,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                   ),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: borderColor),
@@ -581,7 +620,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? primary.withValues(alpha: 0.14) : Colors.transparent,
+          color: isSelected
+              ? primary.withValues(alpha: 0.14)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? primary : borderColor,
@@ -594,7 +635,10 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
             Icon(
               icon,
               size: 15,
-              color: isSelected ? primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: isSelected
+                  ? primary
+                  : Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.6),
             ),
             const SizedBox(width: 6),
             Text(
@@ -602,7 +646,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? primary : Theme.of(context).colorScheme.onSurface,
+                color: isSelected
+                    ? primary
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -637,7 +683,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.6),
               ),
             ),
             Text(
@@ -666,7 +713,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         return Theme(
           data: Theme.of(ctx).copyWith(
             datePickerTheme: DatePickerThemeData(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
           child: child!,
@@ -689,7 +738,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         return Theme(
           data: Theme.of(ctx).copyWith(
             timePickerTheme: TimePickerThemeData(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
           child: child!,
@@ -704,7 +755,9 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
   Widget _buildTaskLinkDropdown(Color borderColor) {
     if (!Get.isRegistered<TaskController>()) return const SizedBox.shrink();
     final taskController = Get.find<TaskController>();
-    final pendingTasks = taskController.tasks.where((t) => !t.completed).toList();
+    final pendingTasks = taskController.tasks
+        .where((t) => !t.completed)
+        .toList();
 
     if (pendingTasks.isEmpty) return const SizedBox.shrink();
 
