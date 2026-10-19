@@ -6,6 +6,12 @@
       "runtimeExecutable": "C:\\Users\\LAKSHMI NARAYANA\\Desktop\\MAD\\flutter\\bin\\flutter.bat",
       "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8765"],
       "port": 8765
+    },
+    {
+      "name": "omnilife-web-assistant",
+      "runtimeExecutable": "C:\\Users\\LAKSHMI NARAYANA\\Desktop\\MAD\\flutter\\bin\\flutter.bat",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8765", "--dart-define-from-file=.env"],
+      "port": 8765
     }
   ]
 }
