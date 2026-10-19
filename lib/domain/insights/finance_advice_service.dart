@@ -34,7 +34,9 @@ class FinanceAdviceService {
   /// reply was not usable.
   Future<FinanceSuggestions?> write(FinanceSnapshot snapshot) async {
     if (!snapshot.hasData || !canWrite) return null;
-    final key = snapshot.cacheKey;
+    // Bump the version whenever the prompt changes so old wording is not
+    // served from the cache.
+    final key = 'v2_${snapshot.cacheKey}';
     final cached = await _cache.read(key);
     if (cached != null) {
       final parsed = parse(cached);
