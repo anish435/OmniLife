@@ -87,6 +87,23 @@ class ReminderTimeResolver {
     }
 
     var candidate = DateTime(day.year, day.month, day.day, hour, minute);
+    // "Tonight" said after the usual 9 PM: still tonight, so remind shortly
+    // (rounded up to 5 minutes) unless that would slip past midnight.
+    if (!candidate.isAfter(now) &&
+        part == 21 &&
+        !explicit &&
+        repeat == ReminderRepeat.none &&
+        day == today) {
+      final soon = now.add(const Duration(minutes: 30));
+      final rounded = DateTime(
+        soon.year,
+        soon.month,
+        soon.day,
+        soon.hour,
+        (soon.minute / 5).ceil() * 5,
+      );
+      if (rounded.day == today.day) return ResolvedReminder(rounded, repeat);
+    }
     if (!candidate.isAfter(now)) {
       final onToday =
           candidate.year == today.year &&
