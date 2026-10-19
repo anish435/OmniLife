@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_initializing_formals
 
+import '../insights/linked_advisor.dart';
 import 'ai_provider.dart';
 import 'assistant_tool.dart';
 
@@ -35,14 +36,17 @@ class AssistantEngine {
     required ToolRegistry tools,
     DateTime Function()? now,
     this.maxHistoryMessages = 12,
-    this.maxToolCalls = 5,
+    this.maxToolCalls = 8,
+    LinkedAdvisor? Function()? advisor,
   }) : _provider = provider,
        _tools = tools,
+       _advisor = advisor,
        _now = now ?? DateTime.now;
 
   final AiProvider _provider;
   final ToolRegistry _tools;
   final DateTime Function() _now;
+  final LinkedAdvisor? Function()? _advisor;
   final int maxHistoryMessages;
   final int maxToolCalls;
 
@@ -95,7 +99,31 @@ class AssistantEngine {
     for (final call in response.toolCalls.take(maxToolCalls)) {
       outcomes.add(await _tools.execute(call, context));
     }
-    return AssistantTurn(reply: composeReply(outcomes), outcomes: outcomes);
+    var reply = composeReply(outcomes);
+    final advice = await _adviceFor(outcomes, response.text, now);
+    if (advice != null) reply = '$reply\n\n$advice';
+    return AssistantTurn(reply: reply, outcomes: outcomes);
+  }
+
+  /// One short piece of advice when several moments were just logged and
+  /// there is something useful to connect. Never blocks or breaks the turn.
+  Future<String?> _adviceFor(
+    List<ToolOutcome> outcomes,
+    String? modelText,
+    DateTime now,
+  ) async {
+    try {
+      final advisor = _advisor?.call();
+      if (advisor == null) return null;
+      final facts = [
+        for (final o in outcomes)
+          if (o.isWrite && o.fact != null) o.fact!,
+      ];
+      if (facts.isEmpty) return null;
+      return await advisor.advise(facts: facts, now: now, modelText: modelText);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// "Done. I've set a reminder for 9 PM tonight." Built from results, so a
@@ -149,7 +177,10 @@ class AssistantEngine {
         'Reminders: tonight 21:00, morning 08:00, afternoon 14:00, evening '
         '18:00. daily/every day => repeat daily; weekly/every <weekday> => '
         'weekly; else none. Money is an expense unless received/earned/salary. '
-        'If key details are missing, ask one short question instead of guessing.',
+        'If key details are missing, ask one short question instead of guessing. '
+        'Several facts in one message (sleep, water, meal, workout, mood...): '
+        'call logPulse once per fact, all in this one reply. Convert litres '
+        'to ml; give sleep as hours.',
       );
     if (notes.isNotEmpty) {
       b.writeln('About the user: ${notes.join('; ')}');

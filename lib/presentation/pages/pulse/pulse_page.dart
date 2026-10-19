@@ -13,6 +13,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/pulse/day_replay_card.dart';
 import '../../widgets/pulse/pulse_quick_log.dart';
 import '../../widgets/pulse/pulse_timeline.dart';
+import '../../widgets/next_up/next_up_section.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/sync_status_indicator.dart';
 
@@ -71,6 +72,7 @@ class _PulsePageState extends State<PulsePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 48),
                 children: [
+                  const NextUpSection(),
                   _DayNavigator(controller: c),
                   const SizedBox(height: AppSpacing.md),
                   const SectionLabel(title: 'Log a moment'),

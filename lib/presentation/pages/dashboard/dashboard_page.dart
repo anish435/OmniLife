@@ -20,6 +20,7 @@ import '../../widgets/calendar/calendar_colors.dart';
 import '../../widgets/create_task_sheet.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/module_tile.dart';
+import '../../widgets/next_up/next_up_section.dart';
 import '../../widgets/pulse/pulse_quick_log.dart';
 import '../../widgets/sync_status_indicator.dart';
 import '../../controllers/pulse_controller.dart';
@@ -365,6 +366,9 @@ class DashboardPage extends StatelessWidget {
                   );
                 }),
                 const SizedBox(height: AppSpacing.sectionGap),
+
+                // What is left today, only when there is something to say
+                const NextUpSection(),
 
                 // OmniPulse: one-tap capture
                 if (Get.isRegistered<PulseController>()) ...[

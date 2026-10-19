@@ -4,6 +4,8 @@ import '../../domain/assistant/tool_args.dart';
 import '../../domain/assistant/when_format.dart';
 import '../../domain/entities/finance_transaction.dart';
 import '../../domain/entities/life_event.dart';
+import '../../domain/insights/advice_context.dart' show formatMinutes;
+import '../../domain/insights/logged_fact.dart';
 import '../../domain/entities/reminder.dart';
 import '../../domain/entities/task.dart';
 import '../controllers/pulse_controller.dart';
@@ -540,26 +542,76 @@ class LogPulseTool extends AssistantTool {
     'water',
     'meal',
     'workout',
+    'focus',
     'mood',
     'energy',
     'note',
   ];
 
+  static const periods = ['now', 'morning', 'afternoon', 'evening'];
+
+  /// Used when the user says "this morning" without a time.
+  static const morningHour = 8;
+  static const defaultWakeHour = 7;
+
   @override
   String get name => 'logPulse';
   @override
   String get description =>
-      'Quick-log a moment: going to sleep, waking, water, meal, workout, '
-      'mood or energy (value 1-5), or a note (text).';
+      'Quick-log one moment per call: going to sleep, waking, or a night '
+      'already slept (hours), water (ml), meal, workout or focus (minutes), '
+      'mood or energy (value 1-5), or a note (text). Call it once per fact '
+      'when the user states several. Use period/at to backdate.';
   @override
   Map<String, dynamic> get parameters => _schema(
     {
       'kind': {'type': 'string', 'enum': kinds},
-      'value': {'type': 'number', 'description': 'ml of water, or 1-5'},
+      'value': {
+        'type': 'number',
+        'description': 'ml of water, 1-5 for mood/energy, or minutes',
+      },
+      'hours': {
+        'type': 'number',
+        'description': 'sleep: how long they slept, in hours',
+      },
+      'ml': {'type': 'number', 'description': 'water in ml (2 L = 2000)'},
+      'liters': {'type': 'number', 'description': 'water in litres'},
+      'minutes': {'type': 'number', 'description': 'workout or focus length'},
+      'period': {
+        'type': 'string',
+        'enum': periods,
+        'description': 'when it happened, if not just now',
+      },
+      'at': {
+        'type': 'string',
+        'description': 'ISO-8601 local time it happened (sleep: wake time)',
+      },
       'text': _str,
     },
     required: ['kind'],
   );
+
+  /// When the moment happened, or null for "now". An explicit `at` wins;
+  /// otherwise `period` picks a sensible hour, never later than now.
+  DateTime? _momentAt(ToolArgs args, DateTime now) {
+    final when = args.when('at', now: now);
+    if (when != null) {
+      if (when.value.isAfter(now.add(const Duration(minutes: 5)))) {
+        throw const ToolArgException('That time is still ahead of us.');
+      }
+      return when.value;
+    }
+    final period = args.oneOf('period', periods);
+    final hour = switch (period) {
+      'morning' => morningHour,
+      'afternoon' => 14,
+      'evening' => 18,
+      _ => null,
+    };
+    if (hour == null) return null;
+    final t = DateTime(now.year, now.month, now.day, hour);
+    return t.isAfter(now) ? now : t;
+  }
 
   @override
   Future<ToolOutcome> run(ToolArgs args, ToolContext ctx) async {
@@ -568,9 +620,12 @@ class LogPulseTool extends AssistantTool {
     _requireUser(deps);
     final text = args.string('text', maxLength: 300);
     final pulse = deps.pulse;
+    final now = ctx.now;
 
     switch (kind) {
       case 'sleep':
+        final hours = args.number('hours', min: 0.5, max: 16);
+        if (hours != null) return _sleepSession(args, pulse, now, hours);
         final r = await pulse.startSleep();
         if (r == null) return _failed();
         if (r.alreadyAsleep) {
@@ -594,12 +649,21 @@ class LogPulseTool extends AssistantTool {
           'I\'ve logged that you woke up.$slept',
           pulse,
           r.event,
+          fact: d == null
+              ? null
+              : LoggedFact(LoggedKind.sleep, value: d.inMinutes, at: now),
         );
       case 'water':
-        final ml = args.number('value', min: 30, max: 5000);
+        final liters = args.number('liters', min: 0.03, max: 5);
+        final ml =
+            args.number('ml', min: 30, max: 5000) ??
+            (liters == null ? null : liters * 1000) ??
+            args.number('value', min: 30, max: 5000);
+        final at = _momentAt(args, now);
         final r = await pulse.log(
           LifeEventType.water,
           metadata: {'ml': ?ml?.round()},
+          at: at,
         );
         if (r == null) return _failed();
         return _done(
@@ -607,11 +671,18 @@ class LogPulseTool extends AssistantTool {
           'I\'ve logged some water.',
           pulse,
           r.event,
+          fact: LoggedFact(
+            LoggedKind.water,
+            value: (ml ?? 250).round(),
+            at: at ?? now,
+          ),
         );
       case 'meal':
+        final at = _momentAt(args, now);
         final r = await pulse.log(
           LifeEventType.meal,
           metadata: {'label': ?text},
+          at: at,
         );
         if (r == null) return _failed();
         return _done(
@@ -619,18 +690,43 @@ class LogPulseTool extends AssistantTool {
           'I\'ve logged your meal.',
           pulse,
           r.event,
+          fact: LoggedFact(LoggedKind.meal, at: at ?? now),
         );
       case 'workout':
+        final mins = _minutes(args);
+        final at = _momentAt(args, now);
         final r = await pulse.log(
           LifeEventType.workout,
-          metadata: {'label': ?text},
+          metadata: {'label': ?text, 'minutes': ?mins},
+          at: at,
         );
         if (r == null) return _failed();
         return _done(
-          'Logged: workout${text == null ? '' : ', $text'}',
+          'Logged: workout${mins == null ? '' : ' $mins min'}'
+              '${text == null ? '' : ', $text'}',
           'I\'ve logged your workout.',
           pulse,
           r.event,
+          fact: LoggedFact(LoggedKind.workout, value: mins, at: at ?? now),
+        );
+      case 'focus':
+        final mins = _minutes(args);
+        if (mins == null) {
+          throw const ToolFollowUp('How many minutes did you focus for?');
+        }
+        final at = _momentAt(args, now);
+        final r = await pulse.log(
+          LifeEventType.focus,
+          metadata: {'label': ?text, 'minutes': mins},
+          at: at,
+        );
+        if (r == null) return _failed();
+        return _done(
+          'Logged: focus $mins min',
+          'I\'ve logged $mins minutes of focus.',
+          pulse,
+          r.event,
+          fact: LoggedFact(LoggedKind.focus, value: mins, at: at ?? now),
         );
       case 'mood':
       case 'energy':
@@ -639,9 +735,11 @@ class LogPulseTool extends AssistantTool {
         }
         final v = args.number('value', min: 1, max: 5)!.round();
         final isMood = kind == 'mood';
+        final at = _momentAt(args, now);
         final r = await pulse.log(
           isMood ? LifeEventType.mood : LifeEventType.energy,
           metadata: {isMood ? 'score' : 'level': v},
+          at: at,
         );
         if (r == null) return _failed();
         return _done(
@@ -649,6 +747,11 @@ class LogPulseTool extends AssistantTool {
           'I\'ve logged your $kind as $v out of 5.',
           pulse,
           r.event,
+          fact: LoggedFact(
+            isMood ? LoggedKind.mood : LoggedKind.energy,
+            value: v,
+            at: at ?? now,
+          ),
         );
       default:
         if (text == null) throw const ToolFollowUp('What should the note say?');
@@ -666,6 +769,43 @@ class LogPulseTool extends AssistantTool {
     }
   }
 
+  int? _minutes(ToolArgs args) =>
+      (args.number('minutes', min: 1, max: 720) ??
+              args.number('value', min: 1, max: 720))
+          ?.round();
+
+  /// "I slept 3 hours": a completed night ending at the stated wake time,
+  /// or 7 AM today when none was given (never in the future).
+  Future<ToolOutcome> _sleepSession(
+    ToolArgs args,
+    PulseController pulse,
+    DateTime now,
+    double hours,
+  ) async {
+    final minutes = (hours * 60).round();
+    final stated = _momentAt(args, now);
+    var wake =
+        stated ?? DateTime(now.year, now.month, now.day, defaultWakeHour);
+    if (wake.isAfter(now)) wake = now;
+    final r = await pulse.logSleepSession(
+      duration: Duration(minutes: minutes),
+      wakeAt: wake,
+    );
+    if (r == null) return _failed();
+    final label = formatMinutes(minutes);
+    final all = [r.event, ...r.extraEvents];
+    return ToolOutcome.done(
+      label: 'Logged: slept $label',
+      spoken: 'I\'ve logged $label of sleep.',
+      undo: () async {
+        for (final e in all) {
+          await pulse.undo(e);
+        }
+      },
+      fact: LoggedFact(LoggedKind.sleep, value: minutes, at: wake),
+    );
+  }
+
   ToolOutcome _failed() =>
       ToolOutcome.failed('That didn\'t save. Please try again.');
 
@@ -673,13 +813,15 @@ class LogPulseTool extends AssistantTool {
     String label,
     String spoken,
     PulseController pulse,
-    LifeEvent e,
-  ) => ToolOutcome.done(
+    LifeEvent e, {
+    LoggedFact? fact,
+  }) => ToolOutcome.done(
     label: label,
     spoken: spoken,
     undo: () async {
       await pulse.undo(e);
     },
+    fact: fact,
   );
 }
 

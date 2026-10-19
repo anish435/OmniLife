@@ -1,3 +1,4 @@
+import '../insights/logged_fact.dart';
 import 'ai_provider.dart';
 import 'tool_args.dart';
 
@@ -21,6 +22,7 @@ class ToolOutcome {
     this.undo,
     this.onConfirm,
     this.isInfo = false,
+    this.fact,
   });
 
   /// A write that happened. Shown as a result card; [undo] reverses it.
@@ -28,11 +30,13 @@ class ToolOutcome {
     required String label,
     required String spoken,
     Future<void> Function()? undo,
+    LoggedFact? fact,
   }) => ToolOutcome._(
     status: ToolStatus.done,
     spoken: spoken,
     label: label,
     undo: undo,
+    fact: fact,
   );
 
   /// A read-only answer. Shown as plain text, no card.
@@ -65,6 +69,9 @@ class ToolOutcome {
   final Future<void> Function()? undo;
   final Future<ToolOutcome> Function()? onConfirm;
   final bool isInfo;
+
+  /// For a recorded life moment: what was logged, so advice can use it.
+  final LoggedFact? fact;
 
   bool get isWrite => status == ToolStatus.done && !isInfo;
 }

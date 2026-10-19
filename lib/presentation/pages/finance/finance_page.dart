@@ -13,6 +13,7 @@ import '../../widgets/section_label.dart';
 import 'create_transaction_sheet.dart';
 import 'edit_budgets_sheet.dart';
 import 'finance_charts.dart';
+import 'finance_suggestions_sheet.dart';
 
 class FinancePage extends StatelessWidget {
   const FinancePage({super.key});
@@ -25,6 +26,13 @@ class FinancePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Finance & Budgeting'),
         actions: [
+          TextButton(
+            onPressed: () => FinanceSuggestionsSheet.show(
+              context,
+              controller: controller,
+            ),
+            child: const Text('Suggestions'),
+          ),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: 'Change budgets',

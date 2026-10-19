@@ -79,3 +79,29 @@ abstract class AiProvider {
     required List<AiToolSpec> tools,
   });
 }
+
+/// Providers that can also write a plain answer without tools, with their
+/// own token budget. Optional: [completeText] falls back to [AiProvider.chat].
+abstract interface class TextCompleter {
+  Future<String?> complete({
+    required List<AiMessage> messages,
+    int maxTokens = 400,
+  });
+}
+
+/// A tool-free completion from any provider: the short written advice and
+/// summaries that do not need the assistant's tools.
+Future<String?> completeText(
+  AiProvider provider,
+  List<AiMessage> messages, {
+  int maxTokens = 400,
+}) async {
+  if (provider is TextCompleter) {
+    return (provider as TextCompleter).complete(
+      messages: messages,
+      maxTokens: maxTokens,
+    );
+  }
+  final r = await provider.chat(messages: messages, tools: const []);
+  return r.text;
+}
