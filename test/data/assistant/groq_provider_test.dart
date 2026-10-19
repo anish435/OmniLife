@@ -64,7 +64,7 @@ void main() {
       );
       expect(seen.headers['authorization'], 'Bearer test-key');
       final body = jsonDecode(seen.body) as Map<String, dynamic>;
-      expect(body['model'], 'llama-3.3-70b-versatile');
+      expect(body['model'], 'openai/gpt-oss-20b');
       expect(body['temperature'], lessThanOrEqualTo(0.3));
       expect(body['tool_choice'], 'auto');
       expect(
@@ -287,7 +287,7 @@ void main() {
     expect(const AssistantConfig().isConfigured, isFalse);
     expect(const AssistantConfig(groqApiKey: 'k').isConfigured, isTrue);
     expect(const AssistantConfig().hasRemoteMemory, isFalse);
-    expect(const AssistantConfig().model, 'llama-3.3-70b-versatile');
+    expect(const AssistantConfig().model, 'openai/gpt-oss-20b');
     // No key is baked into the test build.
     expect(AssistantConfig.fromEnvironment().isConfigured, isFalse);
   });

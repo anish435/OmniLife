@@ -3,7 +3,7 @@
 A conversational assistant that can set reminders, add tasks, notes, events
 and transactions, quick-log OmniPulse moments, tick habits and answer a few
 questions about your own data. It uses Groq's free tier
-(`llama-3.3-70b-versatile`). Open it from the mic on the dashboard or at
+(`openai/gpt-oss-20b`). Open it from the mic on the dashboard or at
 `/assistant`.
 
 ## Turning it on
@@ -47,7 +47,7 @@ Defines are compile-time. Restart (not hot reload) after changing `.env`.
 
 | Define          | Purpose                                                      |
 | --------------- | ------------------------------------------------------------ |
-| `GROQ_MODEL`    | Override the model (default `llama-3.3-70b-versatile`).      |
+| `GROQ_MODEL`    | Override the model (default `openai/gpt-oss-20b`).      |
 | `AI_MEMORY_URL` | Base URL of a memory service (for example in front of MongoDB). Off by default; memory then stays on-device only. |
 
 The memory contract is `POST {url}/memory/{userId}` with `{text, at}` and

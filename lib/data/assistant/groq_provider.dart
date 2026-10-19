@@ -15,7 +15,7 @@ class GroqProvider implements AiProvider {
   GroqProvider({
     required this.apiKey,
     http.Client? client,
-    this.model = 'llama-3.3-70b-versatile',
+    this.model = 'openai/gpt-oss-20b',
     Uri? endpoint,
     this.temperature = 0.2,
     this.maxTokens = 400,

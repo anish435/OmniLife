@@ -6,7 +6,7 @@ class AssistantConfig {
   const AssistantConfig({
     this.groqApiKey = '',
     this.memoryUrl = '',
-    this.model = 'llama-3.3-70b-versatile',
+    this.model = 'openai/gpt-oss-20b',
   });
 
   /// Reads the compile-time defines.
@@ -20,7 +20,7 @@ class AssistantConfig {
     );
   }
 
-  static const defaultModel = 'llama-3.3-70b-versatile';
+  static const defaultModel = 'openai/gpt-oss-20b';
 
   final String groqApiKey;
 
