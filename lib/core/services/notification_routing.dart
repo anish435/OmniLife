@@ -43,6 +43,7 @@ abstract final class NotificationRouting {
   static const kindCalendar = 'calendar';
   static const kindFocus = 'focus';
   static const kindNote = 'note';
+  static const kindReminder = 'reminder';
 
   static const Map<String, String> _routes = {
     kindTask: AppRoutes.tasks,
@@ -51,6 +52,7 @@ abstract final class NotificationRouting {
     'event': AppRoutes.calendar,
     kindFocus: AppRoutes.focus,
     kindNote: AppRoutes.notes,
+    kindReminder: AppRoutes.reminders,
   };
 
   static String encode(String kind, [String? id]) =>

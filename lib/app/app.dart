@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../core/bindings/initial_binding.dart';
 import '../presentation/controllers/app_controller.dart';
 import 'routes/app_pages.dart';
+import 'routes/auth_guard.dart';
 import 'theme/app_theme.dart';
 
 /// Application root. Wires theme, routing and the GetX dependency
@@ -25,7 +26,7 @@ class OmniLifeApp extends StatelessWidget {
         themeMode: appController.themeMode.value,
         initialBinding: InitialBinding(),
         initialRoute: AppPages.initial,
-        getPages: AppPages.routes,
+        getPages: AuthGuard.protect(AppPages.routes),
       ),
     );
   }

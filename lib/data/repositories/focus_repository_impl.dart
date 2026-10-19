@@ -1,6 +1,9 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/failures.dart';
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/focus_session.dart';
 import '../../domain/repositories/focus_repository.dart';
 import '../datasources/local/local_focus_data_source.dart';
@@ -15,13 +18,23 @@ class FocusRepositoryImpl implements FocusRepository {
     LocalFocusDataSource? dataSource,
     UserScopedFirestoreDataSource? remoteDataSource,
     bool? useLocalDatabase,
+    SyncEngine? syncEngine,
   }) : _local = dataSource,
        _remote = remoteDataSource,
-       _useLocal = useLocalDatabase ?? !kIsWeb;
+       _useLocal = useLocalDatabase ?? !kIsWeb,
+       _syncEngine = syncEngine;
 
   final LocalFocusDataSource? _local;
   final UserScopedFirestoreDataSource? _remote;
   final bool _useLocal;
+  final SyncEngine? _syncEngine;
+
+  /// Durable, retried uploads through the shared [SyncEngine].
+  late final RepositorySync _sync = RepositorySync(
+    engine: _syncEngine,
+    fallbackSet: (u, c, i, d) => _remoteDs.set(u, c, i, d),
+    fallbackDelete: (u, c, i) => _remoteDs.delete(u, c, i),
+  );
 
   final Map<String, FocusSession> _cache = {};
 
@@ -35,26 +48,23 @@ class FocusRepositoryImpl implements FocusRepository {
       final model = FocusSessionModel.fromEntity(session);
       _cache[model.id] = model;
       if (_useLocal) await _localDs.insert(model);
-      _syncToRemote(model);
+      await _syncToRemote(model);
       return model;
     } catch (e) {
       throw DatabaseFailure('Failed to save focus session: $e');
     }
   }
 
-  void _syncToRemote(FocusSessionModel model) async {
-    try {
-      await _remoteDs
-          .set(
-            model.userId,
-            FirestoreCollections.focusSessions,
-            model.id,
-            model.toFirestoreMap(),
-          )
-          .timeout(const Duration(milliseconds: 1500));
-    } catch (_) {
-      // Offline: the local copy is the source of truth until the next sync.
-    }
+  /// Queues the upload. The local copy is already saved; the engine keeps
+  /// retrying until the server has the session.
+  Future<void> _syncToRemote(FocusSessionModel model) async {
+    await _sync.set(
+      model.userId,
+      FirestoreCollections.focusSessions,
+      model.id,
+      model.toFirestoreMap(),
+      updatedAt: model.endedAt,
+    );
   }
 
   @override
@@ -68,9 +78,10 @@ class FocusRepositoryImpl implements FocusRepository {
         sessions = await _localDs.getSessions(userId, since: since);
         _mergeRemote(userId);
       } else {
-        final docs = await _remoteDs.list(
+        final docs = await _sync.overlay(
           userId,
           FirestoreCollections.focusSessions,
+          await _remoteDs.list(userId, FirestoreCollections.focusSessions),
         );
         for (final d in docs) {
           final m = FocusSessionModel.fromMap({...d, 'userId': userId});

@@ -230,6 +230,14 @@ class WellnessPage extends StatelessWidget {
                     label: '${hours.toStringAsFixed(1)}h',
                     onChanged: (val) => controller.updateSleepDuration(val),
                   ),
+                  if (controller.sleepFromPulse.value)
+                    Text(
+                      'From your sleep and wake times in Pulse. '
+                      'Move the slider to change it.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                 ],
               );
             }),

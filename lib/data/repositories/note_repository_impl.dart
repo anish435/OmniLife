@@ -1,5 +1,8 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/foundation.dart';
 
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/note.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../../domain/usecases/notes/note_search_ranker.dart';
@@ -12,56 +15,46 @@ class NoteRepositoryImpl implements NoteRepository {
   NoteRepositoryImpl({
     LocalNoteDataSource? localDataSource,
     UserScopedFirestoreDataSource? remoteDataSource,
+    SyncEngine? syncEngine,
   }) : _localDataSource = localDataSource ?? LocalNoteDataSource(),
-       _remoteDataSource = remoteDataSource ?? UserScopedFirestoreDataSource();
+       _remoteDataSource = remoteDataSource ?? UserScopedFirestoreDataSource(),
+       _syncEngine = syncEngine;
 
   final LocalNoteDataSource _localDataSource;
   final UserScopedFirestoreDataSource _remoteDataSource;
+  final SyncEngine? _syncEngine;
+
+  /// Durable, retried uploads through the shared [SyncEngine].
+  late final RepositorySync _sync = RepositorySync(
+    engine: _syncEngine,
+    fallbackSet: (u, c, i, d) => _remoteDataSource.set(u, c, i, d),
+    fallbackDelete: (u, c, i) => _remoteDataSource.delete(u, c, i),
+  );
 
   final Map<String, NoteModel> _memoryCache = {};
 
-  void _syncToRemote(String userId, NoteModel model) {
-    if (kIsWeb) {
-      _remoteDataSource
-          .set(
-            userId,
-            FirestoreCollections.notes,
-            model.id,
-            model.toFirestoreMap(),
-          )
-          .catchError((_) {});
-    } else {
-      // In a real app, we'd add to sync_queue. For now, best-effort.
-      _remoteDataSource
-          .set(
-            userId,
-            FirestoreCollections.notes,
-            model.id,
-            model.toFirestoreMap(),
-          )
-          .catchError((_) {});
-    }
+  Future<void> _syncToRemote(String userId, NoteModel model) async {
+    await _sync.set(
+      userId,
+      FirestoreCollections.notes,
+      model.id,
+      model.toFirestoreMap(),
+      updatedAt: model.updatedAt,
+    );
   }
 
-  void _deleteFromRemote(String userId, String noteId) {
-    if (kIsWeb) {
-      _remoteDataSource
-          .delete(userId, FirestoreCollections.notes, noteId)
-          .catchError((_) {});
-    } else {
-      _remoteDataSource
-          .delete(userId, FirestoreCollections.notes, noteId)
-          .catchError((_) {});
-    }
+  Future<void> _deleteFromRemote(String userId, String noteId) async {
+    await _sync.delete(userId, FirestoreCollections.notes, noteId);
   }
 
   @override
   Future<List<Note>> getNotes(String userId) async {
     if (kIsWeb) {
       try {
-        final docs = await _remoteDataSource.list(
+        final docs = await _sync.overlay(
           userId,
           FirestoreCollections.notes,
+          await _remoteDataSource.list(userId, FirestoreCollections.notes),
         );
         final remote = docs.map(NoteModel.fromMap).toList();
         // Remote wins, but notes created locally that have not synced yet
@@ -109,9 +102,10 @@ class NoteRepositoryImpl implements NoteRepository {
   Future<List<Note>> getArchivedNotes(String userId) async {
     if (kIsWeb) {
       try {
-        final docs = await _remoteDataSource.list(
+        final docs = await _sync.overlay(
           userId,
           FirestoreCollections.notes,
+          await _remoteDataSource.list(userId, FirestoreCollections.notes),
         );
         for (final n in docs.map(NoteModel.fromMap)) {
           _memoryCache[n.id] = n;
@@ -144,7 +138,7 @@ class NoteRepositoryImpl implements NoteRepository {
       await _localDataSource.insertNote(model);
     }
 
-    _syncToRemote(note.userId, model);
+    await _syncToRemote(note.userId, model);
 
     return model;
   }
@@ -158,7 +152,7 @@ class NoteRepositoryImpl implements NoteRepository {
       await _localDataSource.updateNote(model);
     }
 
-    _syncToRemote(note.userId, model);
+    await _syncToRemote(note.userId, model);
 
     return model;
   }
@@ -173,7 +167,7 @@ class NoteRepositoryImpl implements NoteRepository {
     }
 
     if (existing != null) {
-      _deleteFromRemote(existing.userId, noteId);
+      await _deleteFromRemote(existing.userId, noteId);
     }
   }
 

@@ -1,17 +1,103 @@
 rules_version = '2';
 
-// Development-baseline security rules for the OmniLife Firestore data
-// model documented in docs/architecture.md §5 (Firestore ownership model).
+// OmniLife Firestore security rules.
 //
-// Rule: a signed-in user may only read/write documents under their own
-// users/{uid} subtree. Nothing else is permitted.
+// Ownership model (docs/architecture.md section 5): everything lives under
+// users/{uid}/..., and only the signed-in user whose uid matches the path
+// may read or write it. Every other path is denied by default.
+//
+// On top of ownership, writes get light sanity checks: the document must
+// be a small-enough map, and when it carries a userId/uid field that field
+// must be the caller's own uid, so a client cannot plant data that claims
+// to belong to someone else. See docs/security.md for the full table.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
 
+    // ---- helpers ------------------------------------------------------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Owner fields, when present, must be the caller's uid.
+    function ownerFieldsOk(uid) {
+      let d = request.resource.data;
+      return (!('userId' in d) || d.userId == uid)
+          && (!('uid' in d) || d.uid == uid);
+    }
+
+    // A real document, not absurdly wide.
+    function shapeOk() {
+      return request.resource.data is map
+          && request.resource.data.keys().size() <= 60;
+    }
+
+    function validWrite(uid) {
+      return isOwner(uid) && shapeOk() && ownerFieldsOk(uid);
+    }
+
+    function optionalString(field) {
+      return !(field in request.resource.data)
+          || request.resource.data[field] is string
+          || request.resource.data[field] == null;
+    }
+
+    // ---- per-user data ------------------------------------------------
+
+    match /users/{uid} {
+      // The user's own profile document (if any).
+      allow read: if isOwner(uid);
+      allow create, update: if validWrite(uid);
+      allow delete: if isOwner(uid);
+
+      // Collections whose documents carry only ownership and shape checks:
+      // tasks, projects, calendar events, notes, goals, saved places,
+      // daily sensor summaries, reminders, device tokens, user settings
+      // (per-category budgets) and habit completion logs.
       match /{collection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read: if isOwner(uid) && collection in [
+          'tasks', 'projects', 'events', 'notes', 'goals', 'habits',
+          'habit_logs', 'expenses', 'wellness', 'focus_sessions',
+          'locations', 'sensor_daily', 'reminders', 'devices', 'settings',
+          'life_events', 'conversations'
+        ];
+        allow create, update: if validWrite(uid) && collection in [
+          'tasks', 'projects', 'events', 'notes', 'goals', 'habits',
+          'habit_logs', 'expenses', 'wellness', 'focus_sessions',
+          'locations', 'sensor_daily', 'reminders', 'devices', 'settings',
+          'conversations'
+        ] && optionalString('title');
+        allow delete: if isOwner(uid) && collection in [
+          'tasks', 'projects', 'events', 'notes', 'goals', 'habits',
+          'habit_logs', 'expenses', 'wellness', 'focus_sessions',
+          'locations', 'sensor_daily', 'reminders', 'devices', 'settings',
+          'life_events', 'conversations'
+        ];
+      }
+
+      // OmniPulse moments: a typed timeline entry with an epoch-ms time.
+      // Deletes are tombstones (deleted: true) written as updates, but a
+      // hard delete by the owner is also allowed.
+      match /life_events/{eventId} {
+        allow read: if isOwner(uid);
+        allow create, update: if validWrite(uid)
+            && request.resource.data.type is string
+            && request.resource.data.timestamp is int
+            && request.resource.data.updatedAt is int
+            && (!('deleted' in request.resource.data)
+                || request.resource.data.deleted is bool);
+        allow delete: if isOwner(uid);
+      }
+
+      // Assistant conversations keep their messages one level down.
+      match /conversations/{conversationId}/messages/{messageId} {
+        allow read: if isOwner(uid);
+        allow create, update: if validWrite(uid);
+        allow delete: if isOwner(uid);
       }
     }
 

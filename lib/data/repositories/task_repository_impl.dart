@@ -1,6 +1,9 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/failures.dart';
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/local_task_data_source.dart';
@@ -14,10 +17,19 @@ class TaskRepositoryImpl implements TaskRepository {
   TaskRepositoryImpl({
     this.dataSource,
     this.remoteDataSource,
-  });
+    SyncEngine? syncEngine,
+  }) : _syncEngine = syncEngine;
 
   final LocalTaskDataSource? dataSource;
   final UserScopedFirestoreDataSource? remoteDataSource;
+  final SyncEngine? _syncEngine;
+
+  /// Durable, retried uploads through the shared [SyncEngine].
+  late final RepositorySync _sync = RepositorySync(
+    engine: _syncEngine,
+    fallbackSet: (u, c, i, d) => _resolvedRemoteDataSource.set(u, c, i, d),
+    fallbackDelete: (u, c, i) => _resolvedRemoteDataSource.delete(u, c, i),
+  );
 
   // In-memory cache for fast UI updates and fallback on Web
   final Map<String, Task> _memoryCache = {};
@@ -33,9 +45,14 @@ class TaskRepositoryImpl implements TaskRepository {
     try {
       if (kIsWeb) {
         try {
-          final docs = await _resolvedRemoteDataSource.list(
+          // Layer writes that have not uploaded yet over the server copy.
+          final docs = await _sync.overlay(
             userId,
             FirestoreCollections.tasks,
+            await _resolvedRemoteDataSource.list(
+              userId,
+              FirestoreCollections.tasks,
+            ),
           );
           final tasks = docs.map(TaskModel.fromMap).toList();
           for (final t in tasks) {
@@ -78,8 +95,11 @@ class TaskRepositoryImpl implements TaskRepository {
         userId,
         FirestoreCollections.tasks,
       );
+      // A queued local change (or delete) is newer than what the server has.
+      final pending = await _sync.pendingIds(userId, FirestoreCollections.tasks);
       for (final doc in remoteDocs) {
         final model = TaskModel.fromMap(doc);
+        if (pending.contains(model.id)) continue;
         _memoryCache[model.id] = model;
         await _resolvedLocalDataSource.insertTask(model);
       }
@@ -115,8 +135,7 @@ class TaskRepositoryImpl implements TaskRepository {
         await _resolvedLocalDataSource.insertTask(model);
       }
 
-      // Non-blocking background sync to Firestore
-      _syncTaskToRemote(task.userId, model);
+      await _syncTaskToRemote(task.userId, model);
 
       return model;
     } catch (e) {
@@ -124,19 +143,16 @@ class TaskRepositoryImpl implements TaskRepository {
     }
   }
 
-  void _syncTaskToRemote(String userId, TaskModel model) async {
-    try {
-      await _resolvedRemoteDataSource
-          .set(
-            userId,
-            FirestoreCollections.tasks,
-            model.id,
-            model.toFirestoreMap(),
-          )
-          .timeout(const Duration(milliseconds: 1500));
-    } catch (_) {
-      // Safe to ignore if offline or network unavailable — local state is saved
-    }
+  /// Queues the write; the local copy is already saved, so a failure here
+  /// never loses data, and the engine retries until the server accepts it.
+  Future<void> _syncTaskToRemote(String userId, TaskModel model) async {
+    await _sync.set(
+      userId,
+      FirestoreCollections.tasks,
+      model.id,
+      model.toFirestoreMap(),
+      updatedAt: model.updatedAt,
+    );
   }
 
   @override
@@ -159,8 +175,7 @@ class TaskRepositoryImpl implements TaskRepository {
 
       _memoryCache[updated.id] = updated;
 
-      // Non-blocking sync to Firestore
-      _syncTaskToRemote(task.userId, updated);
+      await _syncTaskToRemote(task.userId, updated);
 
       return updated;
     } on Failure {
@@ -188,7 +203,7 @@ class TaskRepositoryImpl implements TaskRepository {
       final userId = task?.userId;
 
       if (userId != null) {
-        _syncDeleteToRemote(userId, id);
+        await _syncDeleteToRemote(userId, id);
       }
     } on Failure {
       rethrow;
@@ -197,16 +212,8 @@ class TaskRepositoryImpl implements TaskRepository {
     }
   }
 
-  void _syncDeleteToRemote(String userId, String id) async {
-    try {
-      await _resolvedRemoteDataSource
-          .delete(
-            userId,
-            FirestoreCollections.tasks,
-            id,
-          )
-          .timeout(const Duration(milliseconds: 1500));
-    } catch (_) {}
+  Future<void> _syncDeleteToRemote(String userId, String id) async {
+    await _sync.delete(userId, FirestoreCollections.tasks, id);
   }
 
   @override
@@ -229,7 +236,7 @@ class TaskRepositoryImpl implements TaskRepository {
         );
       }
 
-      _syncTaskToRemote(updated.userId, TaskModel.fromEntity(updated));
+      await _syncTaskToRemote(updated.userId, TaskModel.fromEntity(updated));
 
       return updated;
     } on Failure {

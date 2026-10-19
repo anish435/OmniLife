@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../core/errors/failures.dart';
+import '../../core/errors/user_messages.dart';
 import '../../domain/entities/calendar_event.dart';
 import '../../domain/repositories/auth_repository.dart' show AppUser;
 import '../../domain/repositories/calendar_repository.dart';
@@ -223,6 +224,10 @@ class CalendarController extends GetxController {
   }) async {
     if (title.trim().isEmpty) return null;
     if (endAt.isBefore(startAt)) return null;
+    if (_authController.currentUser.value == null) {
+      errorMessage.value = signInToSaveMessage;
+      return null;
+    }
 
     final now = DateTime.now();
     final newEvent = CalendarEvent(

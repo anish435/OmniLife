@@ -6,6 +6,10 @@ import '../../data/repositories/life_event_repository_impl.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../../domain/repositories/life_event_repository.dart';
 import '../../domain/repositories/task_repository.dart';
+import '../../domain/focus/focus_event_sink.dart';
+import '../../domain/services/sleep_source.dart';
+import '../../domain/usecases/pulse/pulse_sleep_source.dart';
+import '../../domain/usecases/pulse/pulse_focus_event_sink.dart';
 import '../../domain/usecases/pulse/pulse_insights_service.dart';
 import '../../domain/usecases/pulse/pulse_service.dart';
 import '../../presentation/controllers/auth_controller.dart';
@@ -37,6 +41,20 @@ void registerSyncAndPulse() {
     Get.lazyPut<PulseService>(
       () => PulseService(events: Get.find<LifeEventRepository>()),
       fenix: true,
+    );
+  }
+  // Wellness defaults its sleep hours from Pulse sleep sessions.
+  if (!Get.isRegistered<SleepSource>()) {
+    Get.lazyPut<SleepSource>(
+      () => PulseSleepSource(Get.find<LifeEventRepository>()),
+      fenix: true,
+    );
+  }
+  // Finished focus sessions become "focus" moments on the Pulse timeline.
+  if (!Get.isRegistered<FocusEventSink>()) {
+    Get.put<FocusEventSink>(
+      PulseFocusEventSink(() => Get.find<PulseService>()),
+      permanent: true,
     );
   }
   if (!Get.isRegistered<PulseInsightsService>()) {

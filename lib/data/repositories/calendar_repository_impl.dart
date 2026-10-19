@@ -1,6 +1,9 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/failures.dart';
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/calendar_event.dart';
 import '../../domain/repositories/calendar_repository.dart';
 import '../datasources/local/local_calendar_data_source.dart';
@@ -13,10 +16,19 @@ class CalendarRepositoryImpl implements CalendarRepository {
   CalendarRepositoryImpl({
     this.dataSource,
     this.remoteDataSource,
-  });
+    SyncEngine? syncEngine,
+  }) : _syncEngine = syncEngine;
 
   final LocalCalendarDataSource? dataSource;
   final UserScopedFirestoreDataSource? remoteDataSource;
+  final SyncEngine? _syncEngine;
+
+  /// Durable, retried uploads through the shared [SyncEngine].
+  late final RepositorySync _sync = RepositorySync(
+    engine: _syncEngine,
+    fallbackSet: (u, c, i, d) => _resolvedRemoteDataSource.set(u, c, i, d),
+    fallbackDelete: (u, c, i) => _resolvedRemoteDataSource.delete(u, c, i),
+  );
 
   final Map<String, CalendarEvent> _memoryCache = {};
 
@@ -35,9 +47,14 @@ class CalendarRepositoryImpl implements CalendarRepository {
     try {
       if (kIsWeb) {
         try {
-          final docs = await _resolvedRemoteDataSource.list(
+          // Layer writes that have not uploaded yet over the server copy.
+          final docs = await _sync.overlay(
             userId,
             FirestoreCollections.events,
+            await _resolvedRemoteDataSource.list(
+              userId,
+              FirestoreCollections.events,
+            ),
           );
           final events = docs.map(CalendarEventModel.fromMap).toList();
           for (final e in events) {
@@ -91,8 +108,14 @@ class CalendarRepositoryImpl implements CalendarRepository {
         userId,
         FirestoreCollections.events,
       );
+      // A queued local change (or delete) is newer than what the server has.
+      final pending = await _sync.pendingIds(
+        userId,
+        FirestoreCollections.events,
+      );
       for (final doc in remoteDocs) {
         final model = CalendarEventModel.fromMap(doc);
+        if (pending.contains(model.id)) continue;
         _memoryCache[model.id] = model;
         await _resolvedLocalDataSource.insertEvent(model);
       }
@@ -128,8 +151,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
         await _resolvedLocalDataSource.insertEvent(model);
       }
 
-      // Non-blocking sync to Firestore
-      _syncEventToRemote(event.userId, model);
+      await _syncEventToRemote(event.userId, model);
 
       return model;
     } catch (e) {
@@ -137,17 +159,19 @@ class CalendarRepositoryImpl implements CalendarRepository {
     }
   }
 
-  void _syncEventToRemote(String userId, CalendarEventModel model) async {
-    try {
-      await _resolvedRemoteDataSource
-          .set(
-            userId,
-            FirestoreCollections.events,
-            model.id,
-            model.toFirestoreMap(),
-          )
-          .timeout(const Duration(milliseconds: 1500));
-    } catch (_) {}
+  /// Queues the write; the local copy is already saved, and the engine
+  /// retries until the server accepts it.
+  Future<void> _syncEventToRemote(
+    String userId,
+    CalendarEventModel model,
+  ) async {
+    await _sync.set(
+      userId,
+      FirestoreCollections.events,
+      model.id,
+      model.toFirestoreMap(),
+      updatedAt: model.updatedAt,
+    );
   }
 
   @override
@@ -170,8 +194,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
       _memoryCache[updated.id] = updated;
 
-      // Non-blocking sync to Firestore
-      _syncEventToRemote(event.userId, updated);
+      await _syncEventToRemote(event.userId, updated);
 
       return updated;
     } on Failure {
@@ -199,7 +222,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
       final userId = event?.userId;
 
       if (userId != null) {
-        _syncDeleteToRemote(userId, id);
+        await _syncDeleteToRemote(userId, id);
       }
     } on Failure {
       rethrow;
@@ -208,15 +231,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
     }
   }
 
-  void _syncDeleteToRemote(String userId, String id) async {
-    try {
-      await _resolvedRemoteDataSource
-          .delete(
-            userId,
-            FirestoreCollections.events,
-            id,
-          )
-          .timeout(const Duration(milliseconds: 1500));
-    } catch (_) {}
+  Future<void> _syncDeleteToRemote(String userId, String id) async {
+    await _sync.delete(userId, FirestoreCollections.events, id);
   }
 }

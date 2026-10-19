@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../core/errors/user_messages.dart';
 import '../../core/services/analytics_service.dart';
 
 import '../../core/errors/failures.dart';
@@ -79,6 +80,10 @@ class TaskController extends GetxController {
     TaskPriority priority = TaskPriority.medium,
   }) async {
     if (title.trim().isEmpty) return null;
+    if (_authController.currentUser.value == null) {
+      errorMessage.value = signInToSaveMessage;
+      return null;
+    }
 
     final now = DateTime.now();
     final newTask = Task(

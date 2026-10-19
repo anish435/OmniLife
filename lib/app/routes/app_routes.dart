@@ -21,4 +21,8 @@ abstract final class AppRoutes {
   // --- Maps / GPS and Sensors modules (additive) ---
   static const map = '/map';
   static const sensors = '/sensors';
+  static const reminders = '/reminders';
+
+  // Assistant (voice and chat)
+  static const assistant = '/assistant';
 }

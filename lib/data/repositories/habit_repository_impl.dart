@@ -1,6 +1,9 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../datasources/local/local_habit_data_source.dart';
@@ -17,12 +20,22 @@ class HabitRepositoryImpl implements HabitRepository {
     LocalHabitDataSource? localDataSource,
     UserScopedFirestoreDataSource? remoteDataSource,
     bool? useLocalStorage,
+    SyncEngine? syncEngine,
   }) : _localDataSource = localDataSource ?? LocalHabitDataSource(),
        _remoteDataSource = remoteDataSource ?? UserScopedFirestoreDataSource(),
-       _useLocal = useLocalStorage ?? !kIsWeb;
+       _useLocal = useLocalStorage ?? !kIsWeb,
+       _syncEngine = syncEngine;
 
   final LocalHabitDataSource _localDataSource;
   final UserScopedFirestoreDataSource _remoteDataSource;
+  final SyncEngine? _syncEngine;
+
+  /// Durable, retried uploads through the shared [SyncEngine].
+  late final RepositorySync _sync = RepositorySync(
+    engine: _syncEngine,
+    fallbackSet: (u, c, i, d) => _remoteDataSource.set(u, c, i, d),
+    fallbackDelete: (u, c, i) => _remoteDataSource.delete(u, c, i),
+  );
 
   /// SQLite on mobile; on web the in-memory cache plus Firestore.
   final bool _useLocal;
@@ -34,29 +47,27 @@ class HabitRepositoryImpl implements HabitRepository {
 
   String _logDocId(String habitId, String date) => '${habitId}_$date';
 
-  void _syncToRemote(String userId, HabitModel model) {
-    _remoteDataSource
-        .set(
-          userId,
-          FirestoreCollections.habits,
-          model.id,
-          model.toFirestoreMap(),
-        )
-        .catchError((_) {});
+  Future<void> _syncToRemote(String userId, HabitModel model) async {
+    await _sync.set(
+      userId,
+      FirestoreCollections.habits,
+      model.id,
+      model.toFirestoreMap(),
+      updatedAt: model.updatedAt,
+    );
   }
 
-  void _deleteFromRemote(String userId, String habitId) {
-    _remoteDataSource
-        .delete(userId, FirestoreCollections.habits, habitId)
-        .catchError((_) {});
+  Future<void> _deleteFromRemote(String userId, String habitId) async {
+    await _sync.delete(userId, FirestoreCollections.habits, habitId);
   }
 
   @override
   Future<List<Habit>> getHabits(String userId) async {
     if (!_useLocal) {
-      final docs = await _remoteDataSource.list(
+      final docs = await _sync.overlay(
         userId,
         FirestoreCollections.habits,
+        await _remoteDataSource.list(userId, FirestoreCollections.habits),
       );
       for (final h in docs.map(HabitModel.fromMap)) {
         final cached = _memoryCache[h.id];
@@ -77,7 +88,11 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   Future<void> _loadRemoteLogs(String userId) async {
-    final docs = await _remoteDataSource.list(userId, habitLogsCollection);
+    final docs = await _sync.overlay(
+      userId,
+      habitLogsCollection,
+      await _remoteDataSource.list(userId, habitLogsCollection),
+    );
     for (final doc in docs) {
       final log = HabitLogModel.fromMap({
         'id': doc['id'],
@@ -108,7 +123,7 @@ class HabitRepositoryImpl implements HabitRepository {
       await _localDataSource.insertHabit(model);
     }
 
-    _syncToRemote(habit.userId, model);
+    await _syncToRemote(habit.userId, model);
     return model;
   }
 
@@ -121,7 +136,7 @@ class HabitRepositoryImpl implements HabitRepository {
       await _localDataSource.updateHabit(model);
     }
 
-    _syncToRemote(habit.userId, model);
+    await _syncToRemote(habit.userId, model);
     return model;
   }
 
@@ -136,15 +151,13 @@ class HabitRepositoryImpl implements HabitRepository {
     }
 
     if (existing != null) {
-      _deleteFromRemote(existing.userId, habitId);
+      await _deleteFromRemote(existing.userId, habitId);
       for (final date in logs?.keys ?? const <String>[]) {
-        _remoteDataSource
-            .delete(
-              existing.userId,
-              habitLogsCollection,
-              _logDocId(habitId, date),
-            )
-            .catchError((_) {});
+        await _sync.delete(
+          existing.userId,
+          habitLogsCollection,
+          _logDocId(habitId, date),
+        );
       }
     }
   }
@@ -166,9 +179,7 @@ class HabitRepositoryImpl implements HabitRepository {
       if (_useLocal) await _localDataSource.deleteHabitLog(habitId, date);
       _logCache[habitId]?.remove(date);
       if (userId != null) {
-        _remoteDataSource
-            .delete(userId, habitLogsCollection, docId)
-            .catchError((_) {});
+        await _sync.delete(userId, habitLogsCollection, docId);
       }
       return null;
     }
@@ -182,9 +193,7 @@ class HabitRepositoryImpl implements HabitRepository {
     if (_useLocal) await _localDataSource.insertHabitLog(log);
     (_logCache[habitId] ??= {})[date] = log;
     if (userId != null) {
-      _remoteDataSource
-          .set(userId, habitLogsCollection, docId, log.toFirestoreMap())
-          .catchError((_) {});
+      await _sync.set(userId, habitLogsCollection, docId, log.toFirestoreMap());
     }
     return log;
   }

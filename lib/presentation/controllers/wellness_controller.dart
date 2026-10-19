@@ -1,15 +1,28 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../domain/entities/wellness_log.dart';
 import '../../domain/repositories/wellness_repository.dart';
+import '../../domain/services/sleep_source.dart';
 import 'auth_controller.dart';
 
 class WellnessController extends GetxController {
+  WellnessController({SleepSource? sleepSource}) : _sleepSource = sleepSource;
+
   final _repository = Get.find<WellnessRepository>();
   final _authController = Get.find<AuthController>();
+  final SleepSource? _sleepSource;
+
+  SleepSource? get _sleep =>
+      _sleepSource ??
+      (Get.isRegistered<SleepSource>() ? Get.find<SleepSource>() : null);
 
   // State
   final currentLog = Rx<WellnessLog?>(null);
+
+  /// True while the sleep hours shown came from the Pulse sleep log rather
+  /// than being typed in. Editing the duration clears it.
+  final sleepFromPulse = false.obs;
   final logsForMonth = <WellnessLog>[].obs;
   
   final selectedDate = DateTime.now().obs;
@@ -58,12 +71,36 @@ class WellnessController extends GetxController {
           date: DateTime(date.year, date.month, date.day),
         );
       }
-      
+      await _fillSleepFromPulse(userId, date);
+
       final monthLogs = await _repository.getLogsForMonth(userId, date.year, date.month);
       logsForMonth.assignAll(monthLogs);
       
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// With no manual sleep entry for the day, default the duration to the
+  /// Sleep and Wake taps recorded in Pulse. A typed value always wins.
+  Future<void> _fillSleepFromPulse(String userId, DateTime date) async {
+    sleepFromPulse.value = false;
+    final log = currentLog.value;
+    final source = _sleep;
+    if (log == null || source == null || log.sleepDurationHours > 0) return;
+    try {
+      final hours = await source.sleepHoursFor(userId, date);
+      // The day may have changed, or the person typed a value, meanwhile.
+      if (hours == null ||
+          hours <= 0 ||
+          currentLog.value != log ||
+          log.sleepDurationHours > 0) {
+        return;
+      }
+      currentLog.value = log.copyWith(sleepDurationHours: hours.clamp(0.0, 14.0).toDouble());
+      sleepFromPulse.value = true;
+    } catch (_) {
+      // Pulse unavailable: the manual slider keeps working.
     }
   }
 
@@ -76,6 +113,7 @@ class WellnessController extends GetxController {
 
   void updateSleepDuration(double hours) {
     if (currentLog.value == null) return;
+    sleepFromPulse.value = false;
     currentLog.value = currentLog.value!.copyWith(sleepDurationHours: hours);
     _debouncedSave();
   }

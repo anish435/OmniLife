@@ -160,7 +160,8 @@ void main() {
     calendarRepo = FakeCalendarRepository();
     taskRepo = FakeTaskRepository();
 
-    authController = AuthController(authRepository: authRepo);
+    authController = AuthController(authRepository: authRepo)
+      ..currentUser.value = testUser;
     taskController = TaskController(
       taskRepository: taskRepo,
       authController: authController,

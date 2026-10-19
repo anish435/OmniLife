@@ -26,9 +26,11 @@ import '../../data/datasources/local/local_wellness_data_source.dart';
 import '../../data/datasources/remote/user_scoped_firestore_datasource.dart';
 import '../services/notification_service.dart';
 import 'pulse_bindings.dart';
+import 'reminder_bindings.dart';
 import 'focus_push_bindings.dart';
 // --- Maps / GPS and Sensors modules (additive) ---
 import 'location_sensor_bindings.dart';
+import 'assistant_bindings.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -75,6 +77,11 @@ class InitialBinding extends Bindings {
     // Notification Service (Rubric D2)
     final notifService = Get.put(NotificationService(), permanent: true);
     notifService.init();
+
+    // Reminders: saved offline-first, scheduled as local notifications
+    registerReminderDependencies();
+    // Assistant: lazy, nothing runs until the user opens it.
+    registerAssistantDependencies();
 
     // START: focus mode + push messaging
     registerFocusAndPushDependencies();

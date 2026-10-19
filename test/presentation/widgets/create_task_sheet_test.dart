@@ -62,7 +62,8 @@ void main() {
 
   testWidgets('validates empty title when submitting', (tester) async {
     final authRepo = _FakeAuthRepo(const AppUser(uid: 'u1', email: 'test@example.com'));
-    final authController = AuthController(authRepository: authRepo);
+    final authController = AuthController(authRepository: authRepo)
+      ..currentUser.value = authRepo.currentUser;
     final taskRepo = _FakeTaskRepo();
     final taskController = TaskController(taskRepository: taskRepo, authController: authController);
 
@@ -98,7 +99,8 @@ void main() {
 
   testWidgets('creates task successfully with title and dismisses modal', (tester) async {
     final authRepo = _FakeAuthRepo(const AppUser(uid: 'u1', email: 'test@example.com'));
-    final authController = AuthController(authRepository: authRepo);
+    final authController = AuthController(authRepository: authRepo)
+      ..currentUser.value = authRepo.currentUser;
     final taskRepo = _FakeTaskRepo();
     final taskController = TaskController(taskRepository: taskRepo, authController: authController);
 

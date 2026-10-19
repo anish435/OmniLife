@@ -15,6 +15,7 @@ import '../../controllers/finance_controller.dart';
 import '../../controllers/habits_controller.dart';
 import '../../controllers/notes_controller.dart';
 import '../../controllers/task_controller.dart';
+import '../../widgets/assistant/assistant_mic_button.dart';
 import '../../widgets/calendar/calendar_colors.dart';
 import '../../widgets/create_task_sheet.dart';
 import '../../widgets/empty_state.dart';
@@ -123,7 +124,9 @@ class DashboardPage extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+      SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1040),
@@ -170,6 +173,7 @@ class DashboardPage extends StatelessWidget {
                       ),
                     ),
 
+                    const AssistantMicAction(),
                     // Notifications Bell (Rubric D2)
                     IconButton(
                       tooltip: 'Notifications (Rubric D2)',
@@ -542,6 +546,13 @@ class DashboardPage extends StatelessWidget {
                             onTap: () => Get.toNamed(AppRoutes.pulse),
                           ),
                           ModuleTile(
+                            name: 'Reminders',
+                            icon: Icons.alarm_outlined,
+                            accentColor: AppColors.moduleNotes,
+                            countLabel: 'Gentle alerts',
+                            onTap: () => Get.toNamed(AppRoutes.reminders),
+                          ),
+                          ModuleTile(
                             name: 'Insights',
                             icon: Icons.insights_outlined,
                             accentColor: AppColors.moduleCalendar,
@@ -557,6 +568,15 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+      // Assistant: a quiet mic in the bottom-left corner, clear of the
+      // add-task button on the right.
+      Positioned(
+        left: gutter,
+        bottom: 16,
+        child: const SafeArea(child: AssistantMicFab()),
+      ),
+        ],
       ),
     );
   }

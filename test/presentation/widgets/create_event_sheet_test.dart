@@ -107,7 +107,7 @@ void main() {
     calRepo = _FakeCalendarRepository();
     taskRepo = _FakeTaskRepository();
 
-    Get.put(AuthController(authRepository: authRepo));
+    Get.put(AuthController(authRepository: authRepo)..currentUser.value = testUser);
     Get.put(TaskController(taskRepository: taskRepo));
     Get.put(CalendarController(
       calendarRepository: calRepo,

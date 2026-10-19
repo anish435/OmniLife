@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/failures.dart';
+import '../../core/sync/repository_sync.dart';
+import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/saved_location.dart';
 import '../../domain/repositories/saved_location_repository.dart';
 import '../datasources/local/saved_location_local_store.dart';
@@ -21,15 +23,22 @@ class SavedLocationRepositoryImpl implements SavedLocationRepository {
   SavedLocationRepositoryImpl({
     SavedLocationLocalStore? localStore,
     UserDocRemote? remote,
+    SyncEngine? syncEngine,
   }) : _local =
            localStore ??
            (kIsWeb ? InMemorySavedLocationStore() : SqliteSavedLocationStore()),
-       _remote = remote ?? FirestoreUserDocRemote();
+       _remote = remote ?? FirestoreUserDocRemote(),
+       _sync = RepositorySync(engine: syncEngine);
 
   static const collection = 'locations';
 
   final SavedLocationLocalStore _local;
   final UserDocRemote _remote;
+
+  /// When the [SyncEngine] is available, pushes go through its durable
+  /// outbox (retried, visible in the sync indicator). Otherwise the
+  /// repository's own pending flag plus [syncPending] cover offline.
+  final RepositorySync _sync;
   final Set<Future<void>> _inFlight = {};
 
   /// Completes when all background pushes started so far have finished.
@@ -69,12 +78,20 @@ class SavedLocationRepositoryImpl implements SavedLocationRepository {
   }
 
   Future<void> _push(SavedLocation location) async {
-    await _remote.set(
-      location.userId,
-      collection,
-      location.id,
-      SavedLocationModel.fromEntity(location).toFirestoreMap(),
-    );
+    final data = SavedLocationModel.fromEntity(location).toFirestoreMap();
+    if (_sync.isDurable) {
+      final queued = await _sync.set(
+        location.userId,
+        collection,
+        location.id,
+        data,
+        updatedAt: location.updatedAt,
+      );
+      // Not queued: leave the row pending so syncPending retries it.
+      if (!queued) throw StateError('could not queue place for upload');
+    } else {
+      await _remote.set(location.userId, collection, location.id, data);
+    }
     await _local.markSynced(location.id);
   }
 
@@ -89,7 +106,12 @@ class SavedLocationRepositoryImpl implements SavedLocationRepository {
   }
 
   Future<void> _pushDelete(String userId, String id) async {
-    await _remote.delete(userId, collection, id);
+    if (_sync.isDurable) {
+      final queued = await _sync.delete(userId, collection, id);
+      if (!queued) throw StateError('could not queue place delete');
+    } else {
+      await _remote.delete(userId, collection, id);
+    }
     await _local.purge(id);
   }
 
@@ -115,7 +137,13 @@ class SavedLocationRepositoryImpl implements SavedLocationRepository {
   @override
   Future<List<SavedLocation>> refreshFromRemote(String userId) async {
     try {
-      final docs = await _remote.list(userId, collection);
+      // Queued writes are layered over the server copy so a place saved a
+      // moment ago still shows (web reads straight from Firestore).
+      final docs = await _sync.overlay(
+        userId,
+        collection,
+        await _remote.list(userId, collection),
+      );
       final local = await _local.getAll(userId);
       final pendingIds = {
         for (final c in await _local.getPending(userId)) c.location.id,

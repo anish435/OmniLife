@@ -10,6 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../data/repositories/task_repository_impl.dart';
 import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/reminder.dart';
 import '../../firebase_options.dart';
 import 'notification_actions.dart';
 import 'notification_routing.dart';
@@ -123,6 +124,7 @@ Future<void> scheduleReminderWithPlugin(
   bool alarmClock = false,
   bool withActions = true,
   bool markDone = true,
+  DateTimeComponents? matchDateTimeComponents,
 }) async {
   final when = tz.TZDateTime.from(scheduledDate, tz.local);
   final details = buildReminderDetails(
@@ -137,6 +139,7 @@ Future<void> scheduleReminderWithPlugin(
     notificationDetails: details,
     androidScheduleMode: mode,
     payload: payload,
+    matchDateTimeComponents: matchDateTimeComponents,
   );
   try {
     await schedule(
@@ -465,6 +468,75 @@ class NotificationService extends GetxService {
     } catch (e) {
       if (kDebugMode) debugPrint('[NotificationService] schedule failed: $e');
     }
+  }
+
+  /// Schedules a saved reminder. One-off reminders fire once at [when];
+  /// daily ones repeat at the same time of day and weekly ones on the same
+  /// weekday and time. Falls back to an inexact alarm when exact alarms are
+  /// not allowed, and does nothing on web or in tests.
+  Future<void> scheduleReminderNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime when,
+    ReminderRepeat repeat = ReminderRepeat.none,
+    String? payload,
+  }) async {
+    if (kIsWeb || _isTest) return;
+    try {
+      _alignLocalTimeZone();
+      await scheduleReminderWithPlugin(
+        _notificationsPlugin,
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: when,
+        payload: payload,
+        withActions: false,
+        markDone: false,
+        matchDateTimeComponents: switch (repeat) {
+          ReminderRepeat.none => null,
+          ReminderRepeat.daily => DateTimeComponents.time,
+          ReminderRepeat.weekly => DateTimeComponents.dayOfWeekAndTime,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[NotificationService] reminder failed: $e');
+    }
+  }
+
+  static bool _zoneAligned = false;
+
+  /// The timezone package defaults to UTC, which would make "every day at
+  /// 8:00 AM" fire at 8:00 UTC. Pick the zone whose offsets (winter and
+  /// summer) and abbreviation match this device, else a fixed offset.
+  static void _alignLocalTimeZone() {
+    if (_zoneAligned) return;
+    _zoneAligned = true;
+    final now = DateTime.now();
+    final year = now.year;
+    final jan = DateTime(year, 1, 1, 12);
+    final jul = DateTime(year, 7, 1, 12);
+    for (final entry in tz.timeZoneDatabase.locations.entries) {
+      final loc = entry.value;
+      final a = tz.TZDateTime.from(jan, loc);
+      final b = tz.TZDateTime.from(jul, loc);
+      if (a.timeZoneOffset == jan.timeZoneOffset &&
+          b.timeZoneOffset == jul.timeZoneOffset &&
+          tz.TZDateTime.from(now, loc).timeZoneName == now.timeZoneName) {
+        tz.setLocalLocation(loc);
+        return;
+      }
+    }
+    tz.setLocalLocation(
+      tz.Location('device', [0], [0], [
+        tz.TimeZone(
+          now.timeZoneOffset,
+          isDst: false,
+          abbreviation: now.timeZoneName,
+        ),
+      ]),
+    );
   }
 
   /// Cancels a scheduled or visible notification.

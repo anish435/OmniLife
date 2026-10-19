@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:get/get.dart';
 
 import '../../app/routes/app_routes.dart';
+import '../../app/routes/auth_guard.dart';
+import '../../core/errors/auth_error_messages.dart';
 import '../../core/errors/failures.dart';
 import '../../core/services/analytics_service.dart';
 import '../../core/services/user_session_coordinator.dart';
@@ -82,7 +84,7 @@ class AuthController extends GetxController {
         case AuthStatus.unauthenticated:
           Get.offAllNamed(AppRoutes.login);
         case AuthStatus.authenticated:
-          Get.offAllNamed(AppRoutes.dashboard);
+          Get.offAllNamed(AuthGuard.takePendingRoute() ?? AppRoutes.dashboard);
       }
     } catch (_) {}
   }
@@ -110,8 +112,7 @@ class AuthController extends GetxController {
   Future<void> signInWithGoogle() async {
     if (_authRepository == null) {
       errorMessage.value =
-          'Authentication is unavailable: Firebase has not been configured '
-          'for this environment.';
+          authUnavailableMessage;
       return;
     }
     errorMessage.value = null;
@@ -144,8 +145,7 @@ class AuthController extends GetxController {
   Future<bool> sendPasswordResetEmail(String email) async {
     if (_authRepository == null) {
       errorMessage.value =
-          'Authentication is unavailable: Firebase has not been configured '
-          'for this environment.';
+          authUnavailableMessage;
       return false;
     }
     errorMessage.value = null;
@@ -157,7 +157,7 @@ class AuthController extends GetxController {
       errorMessage.value = e.message;
       return false;
     } catch (_) {
-      errorMessage.value = 'Failed to send reset email. Please try again.';
+      errorMessage.value = 'We could not send the reset email. Please try again.';
       return false;
     } finally {
       isLoading.value = false;
@@ -170,8 +170,7 @@ class AuthController extends GetxController {
   Future<void> _runAuthAction(Future<void> Function() action) async {
     if (_authRepository == null) {
       errorMessage.value =
-          'Authentication is unavailable: Firebase has not been configured '
-          'for this environment.';
+          authUnavailableMessage;
       return;
     }
     errorMessage.value = null;

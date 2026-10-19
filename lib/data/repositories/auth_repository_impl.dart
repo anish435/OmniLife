@@ -1,13 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/services.dart' show PlatformException;
 
+import '../../core/errors/auth_error_messages.dart';
 import '../../core/errors/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/remote/firebase_auth_datasource.dart';
 
 /// [AuthRepository] implementation backed by Firebase Authentication.
 ///
-/// Translates `firebase_auth` exceptions into [AuthFailure]s so the rest
-/// of the app never needs to catch `FirebaseAuthException` directly.
+/// Translates `firebase_auth` exceptions into [AuthFailure]s carrying a
+/// plain-language message, so the rest of the app never shows (or needs to
+/// catch) raw SDK errors.
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({FirebaseAuthDataSource? dataSource})
     : _dataSource = dataSource ?? FirebaseAuthDataSource();
@@ -22,53 +25,53 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   AppUser? get currentUser => _toAppUser(_dataSource.currentUser);
 
-  @override
-  Future<AppUser> register({
-    required String email,
-    required String password,
-  }) async {
+  Future<T> _guard<T>(Future<T> Function() action) async {
     try {
-      final user = await _dataSource.register(email: email, password: password);
-      return _toAppUser(user)!;
+      return await action();
     } on fb.FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Registration failed.', code: e.code);
+      throw AuthFailure(friendlyAuthMessage(e.code), code: e.code);
+    } on PlatformException catch (e) {
+      // google_sign_in reports problems this way (network_error, etc.).
+      final code = e.code == 'network_error'
+          ? 'network-request-failed'
+          : e.code;
+      throw AuthFailure(friendlyAuthMessage(code), code: code);
+    } on AuthFailure {
+      rethrow;
+    } catch (_) {
+      throw AuthFailure(friendlyAuthMessage(null), code: 'unknown');
     }
   }
 
   @override
-  Future<AppUser> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final user = await _dataSource.login(email: email, password: password);
-      return _toAppUser(user)!;
-    } on fb.FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Login failed.', code: e.code);
-    }
-  }
+  Future<AppUser> register({required String email, required String password}) =>
+      _guard(() async {
+        final user = await _dataSource.register(
+          email: email,
+          password: password,
+        );
+        return _toAppUser(user)!;
+      });
 
   @override
-  Future<AppUser> signInWithGoogle() async {
-    try {
-      final user = await _dataSource.signInWithGoogle();
-      return _toAppUser(user)!;
-    } on fb.FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Google sign-in failed.', code: e.code);
-    }
-  }
+  Future<AppUser> login({required String email, required String password}) =>
+      _guard(() async {
+        final user = await _dataSource.login(email: email, password: password);
+        return _toAppUser(user)!;
+      });
+
+  @override
+  Future<AppUser> signInWithGoogle() => _guard(() async {
+    final user = await _dataSource.signInWithGoogle();
+    return _toAppUser(user)!;
+  });
 
   @override
   Future<void> logout() => _dataSource.logout();
 
   @override
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _dataSource.sendPasswordResetEmail(email);
-    } on fb.FirebaseAuthException catch (e) {
-      throw AuthFailure(e.message ?? 'Password reset failed.', code: e.code);
-    }
-  }
+  Future<void> sendPasswordResetEmail(String email) =>
+      _guard(() => _dataSource.sendPasswordResetEmail(email));
 
   AppUser? _toAppUser(fb.User? user) {
     if (user == null) return null;

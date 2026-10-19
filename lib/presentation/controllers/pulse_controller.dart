@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 
+import '../../core/errors/user_messages.dart';
 import '../../core/sync/sync_engine.dart';
 import '../../domain/entities/life_event.dart';
 import '../../domain/repositories/life_event_repository.dart';
@@ -186,7 +187,7 @@ class PulseController extends GetxController {
 
   Future<QuickLogResult?> _run(Future<QuickLogResult> Function() action) async {
     if (uid == null) {
-      error.value = 'Sign in to record moments.';
+      error.value = signInToSaveMessage;
       return null;
     }
     try {

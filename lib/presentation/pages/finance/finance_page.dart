@@ -11,6 +11,8 @@ import '../../controllers/finance_controller.dart';
 import '../../widgets/app_empty_view.dart';
 import '../../widgets/section_label.dart';
 import 'create_transaction_sheet.dart';
+import 'edit_budgets_sheet.dart';
+import 'finance_charts.dart';
 
 class FinancePage extends StatelessWidget {
   const FinancePage({super.key});
@@ -23,6 +25,28 @@ class FinancePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Finance & Budgeting'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Change budgets',
+            onPressed: () => EditBudgetsSheet.show(context),
+          ),
+          Obx(
+            () => IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Share monthly report (PDF)',
+              onPressed: controller.isExporting.value
+                  ? null
+                  : () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      await controller.exportToPdf();
+                      final note = controller.notice.value;
+                      if (note != null) {
+                        messenger.showSnackBar(SnackBar(content: Text(note)));
+                        controller.notice.value = null;
+                      }
+                    },
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             tooltip: 'Export CSV',
@@ -63,9 +87,18 @@ class FinancePage extends StatelessWidget {
                 children: [
                   _buildTotalCard(context, controller),
                   const SizedBox(height: AppSpacing.lg),
-                  _buildChart(context, controller),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildBudgetProgress(context, controller),
+                  SpendingByCategoryCard(slices: controller.categorySpend),
+                  if (controller.categorySpend.isNotEmpty)
+                    const SizedBox(height: AppSpacing.lg),
+                  MonthlyTrendCard(months: controller.monthlyTrend.toList()),
+                  if (controller.monthlyTrend.any(
+                    (m) => m.income > 0 || m.expense > 0,
+                  ))
+                    const SizedBox(height: AppSpacing.lg),
+                  BudgetsCard(
+                    statuses: controller.budgetStatuses,
+                    onEdit: () => EditBudgetsSheet.show(context),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   const SectionLabel(title: 'RECENT TRANSACTIONS'),
                   const SizedBox(height: AppSpacing.sm),
@@ -185,185 +218,6 @@ class FinancePage extends StatelessWidget {
                 ),
               ],
             )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChart(BuildContext context, FinanceController controller) {
-    final theme = Theme.of(context);
-    final expensesByCategory = controller.expensesByCategory;
-    if (expensesByCategory.isEmpty) return const SizedBox.shrink();
-
-    final colors = [
-      context.semanticColors.tasks,
-      context.semanticColors.calendar,
-      context.semanticColors.notes,
-      context.semanticColors.habits,
-      context.semanticColors.finance,
-      context.semanticColors.wellness,
-      context.semanticColors.warning,
-    ];
-
-    double total = controller.totalExpense;
-    if (total == 0) return const SizedBox.shrink();
-
-    int colorIndex = 0;
-    List<Widget> segments = [];
-    List<Widget> legend = [];
-
-    expensesByCategory.forEach((category, amount) {
-      if (amount > 0) {
-        final color = colors[colorIndex % colors.length];
-        final flex = (amount / total * 1000).toInt();
-        
-        segments.add(
-          Expanded(
-            flex: flex,
-            child: Container(color: color),
-          ),
-        );
-        
-        legend.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0, bottom: 4.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${category.name.capitalizeFirst} (${(amount / total * 100).toStringAsFixed(1)}%)',
-                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        );
-        
-        colorIndex++;
-      }
-    });
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.cardRadius,
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'EXPENSE DISTRIBUTION',
-              style: theme.textTheme.labelSmall?.copyWith(
-                letterSpacing: 0.8,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ClipRRect(
-              borderRadius: AppRadius.chipRadius,
-              child: SizedBox(
-                height: 20,
-                child: Row(children: segments),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(children: legend),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBudgetProgress(BuildContext context, FinanceController controller) {
-    final theme = Theme.of(context);
-    final expensesByCategory = controller.expensesByCategory;
-    if (expensesByCategory.isEmpty) return const SizedBox.shrink();
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.cardRadius,
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'BUDGETS',
-              style: theme.textTheme.labelSmall?.copyWith(
-                letterSpacing: 0.8,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ...controller.budgets.keys.map((cat) {
-              if (cat == TransactionCategory.income) return const SizedBox.shrink();
-              final spent = expensesByCategory[cat] ?? 0.0;
-              final limit = controller.budgets[cat]!;
-              final percent = (spent / limit).clamp(0.0, 1.0);
-              
-              Color progressColor = theme.colorScheme.primary;
-              if (percent >= 1.0) {
-                progressColor = AppColors.error;
-              } else if (percent >= 0.8) {
-                progressColor = context.semanticColors.warning;
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          cat.name.capitalizeFirst!,
-                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '\$${spent.toStringAsFixed(0)} / \$${limit.toStringAsFixed(0)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: percent,
-                        minHeight: 6,
-                        color: progressColor,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
           ],
         ),
       ),

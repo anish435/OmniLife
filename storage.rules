@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// OmniLife Cloud Storage security rules.
+//
+// Receipt photos live at receipts/{uid}/{fileName}. Only the signed-in user
+// whose uid matches the folder name may read, upload or delete them, uploads
+// must be images or PDFs under 10 MB, and everything else is denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /receipts/{uid}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.size < 10 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*|application/pdf');
+
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Deny everything else by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -62,6 +62,22 @@ class _CreateTransactionSheetState extends State<CreateTransactionSheet> {
     String? receiptUrl;
     if (_receiptImage != null) {
       receiptUrl = await _financeController.uploadReceipt(_receiptImage!);
+      if (receiptUrl == null) {
+        // Do not save without the receipt the person attached; let them
+        // retry or remove it.
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _financeController.errorMessage.value ??
+                    'Could not upload the receipt. Please try again.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
     }
 
     final result = await _financeController.addTransaction(
@@ -79,7 +95,12 @@ class _CreateTransactionSheetState extends State<CreateTransactionSheet> {
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save transaction')),
+          SnackBar(
+            content: Text(
+              _financeController.errorMessage.value ??
+                  'That did not save. Please try again.',
+            ),
+          ),
         );
       }
     }

@@ -1,5 +1,9 @@
+import '../../core/errors/user_messages.dart';
+
 import 'package:get/get.dart';
+
 import '../../core/services/analytics_service.dart';
+
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/habit.dart';
@@ -84,7 +88,10 @@ class HabitsController extends GetxController {
     List<int> specificDays = const [],
     String colorTag = 'default',
   }) async {
-    if (_currentUserId.isEmpty) return null;
+    if (_currentUserId.isEmpty) {
+      errorMessage.value = signInToSaveMessage;
+      return null;
+    }
 
     final now = DateTime.now();
     final newHabit = Habit(
@@ -119,7 +126,10 @@ class HabitsController extends GetxController {
   }
 
   Future<bool> updateHabit(Habit habit) async {
-    if (_currentUserId.isEmpty) return false;
+    if (_currentUserId.isEmpty) {
+      errorMessage.value = signInToSaveMessage;
+      return false;
+    }
 
     final updated = habit.copyWith(updatedAt: DateTime.now());
 

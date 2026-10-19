@@ -1,3 +1,5 @@
+import '../../core/errors/user_messages.dart';
+
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
@@ -72,7 +74,11 @@ class GoalsController extends GetxController {
     String? linkedHabitId,
     List<String> milestoneTitles = const [],
   }) async {
-    if (_userId.isEmpty || title.trim().isEmpty) return null;
+    if (_userId.isEmpty) {
+      errorMessage.value = signInToSaveMessage;
+      return null;
+    }
+    if (title.trim().isEmpty) return null;
     final now = DateTime.now();
     final goal = Goal(
       id: const Uuid().v4(),

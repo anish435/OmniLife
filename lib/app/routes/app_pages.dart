@@ -39,6 +39,10 @@ import '../../presentation/pages/focus/focus_page.dart';
 import '../../core/bindings/location_sensor_bindings.dart';
 import '../../presentation/pages/map/map_page.dart';
 import '../../presentation/pages/sensors/sensors_page.dart';
+import '../../core/bindings/reminder_bindings.dart';
+import '../../presentation/pages/reminders/reminders_page.dart';
+import '../../core/bindings/assistant_bindings.dart';
+import '../../presentation/pages/assistant/assistant_page.dart';
 import 'app_routes.dart';
 
 /// Centralized route table. Each future feature adds one [GetPage] entry
@@ -174,6 +178,17 @@ class AppPages {
       name: AppRoutes.sensors,
       page: () => const SensorsPage(),
       binding: BindingsBuilder(registerSensorDependencies),
+    ),
+    GetPage(
+      name: AppRoutes.reminders,
+      page: () => const RemindersPage(),
+      binding: BindingsBuilder(registerReminderDependencies),
+    ),
+    // Assistant (additive)
+    GetPage(
+      name: AppRoutes.assistant,
+      page: () => const AssistantPage(),
+      binding: BindingsBuilder(registerAssistantDependencies),
     ),
   ];
 }

@@ -1,7 +1,11 @@
+import '../../core/errors/user_messages.dart';
+
 import 'dart:async';
 
 import 'package:get/get.dart';
+
 import '../../core/services/analytics_service.dart';
+
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/note.dart';
@@ -188,7 +192,10 @@ class NotesController extends GetxController {
     String colorTag = 'default',
     List<String> tags = const [],
   }) async {
-    if (_currentUserId.isEmpty) return null;
+    if (_currentUserId.isEmpty) {
+      errorMessage.value = signInToSaveMessage;
+      return null;
+    }
 
     final now = DateTime.now();
     final newNote = Note(
@@ -223,7 +230,10 @@ class NotesController extends GetxController {
   }
 
   Future<bool> updateNote(Note note) async {
-    if (_currentUserId.isEmpty) return false;
+    if (_currentUserId.isEmpty) {
+      errorMessage.value = signInToSaveMessage;
+      return false;
+    }
 
     final updated = note.copyWith(updatedAt: DateTime.now());
 
