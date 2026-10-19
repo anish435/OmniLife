@@ -96,13 +96,40 @@ class AssistantEngine {
 
     final context = ToolContext(userText: text, now: now);
     final outcomes = <ToolOutcome>[];
-    for (final call in response.toolCalls.take(maxToolCalls)) {
+    for (final call in expandEntries(response.toolCalls).take(maxToolCalls)) {
       outcomes.add(await _tools.execute(call, context));
     }
     var reply = composeReply(outcomes);
     final advice = await _adviceFor(outcomes, response.text, now);
     if (advice != null) reply = '$reply\n\n$advice';
     return AssistantTurn(reply: reply, outcomes: outcomes);
+  }
+
+  /// The model lists several logged facts as `entries` in one logPulse call
+  /// (it will not make parallel calls reliably). Split them so each fact is
+  /// validated, executed and undone on its own.
+  static List<AiToolCall> expandEntries(List<AiToolCall> calls) {
+    final out = <AiToolCall>[];
+    for (final c in calls) {
+      final entries = c.arguments['entries'];
+      if (c.name == 'logPulse' && entries is List) {
+        var i = 0;
+        for (final e in entries) {
+          if (e is Map) {
+            out.add(
+              AiToolCall(
+                id: '${c.id}_${i++}',
+                name: c.name,
+                arguments: Map<String, dynamic>.from(e),
+              ),
+            );
+          }
+        }
+      } else {
+        out.add(c);
+      }
+    }
+    return out;
   }
 
   /// One short piece of advice when several moments were just logged and
@@ -179,8 +206,8 @@ class AssistantEngine {
         'weekly; else none. Money is an expense unless received/earned/salary. '
         'If key details are missing, ask one short question instead of guessing. '
         'Several facts in one message (sleep, water, meal, workout, mood...): '
-        'call logPulse once per fact, all in this one reply. Convert litres '
-        'to ml; give sleep as hours.',
+        'call logPulse once with every fact listed in entries. Convert '
+        'litres to ml; give sleep as hours.',
       );
     if (notes.isNotEmpty) {
       b.writeln('About the user: ${notes.join('; ')}');

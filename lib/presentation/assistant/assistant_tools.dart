@@ -558,13 +558,24 @@ class LogPulseTool extends AssistantTool {
   String get name => 'logPulse';
   @override
   String get description =>
-      'Quick-log one moment per call: going to sleep, waking, or a night '
-      'already slept (hours), water (ml), meal, workout or focus (minutes), '
-      'mood or energy (value 1-5), or a note (text). Call it once per fact '
-      'when the user states several. Use period/at to backdate.';
+      'Quick-log moments: going to sleep, waking, or a night already slept '
+      '(hours), water (ml), meal, workout or focus (minutes), mood or energy '
+      '(value 1-5), or a note (text). When the user mentions several things, '
+      'put ALL of them in entries in this single call. Use period/at to '
+      'backdate.';
   @override
   Map<String, dynamic> get parameters => _schema(
     {
+      'entries': {'type': 'array', 'items': entrySchema},
+    },
+    required: ['entries'],
+  );
+
+  /// One logged fact. The model lists every fact in `entries`; the engine
+  /// splits them into one call each (see [expandEntries]).
+  static const entrySchema = {
+    'type': 'object',
+    'properties': {
       'kind': {'type': 'string', 'enum': kinds},
       'value': {
         'type': 'number',
@@ -575,7 +586,6 @@ class LogPulseTool extends AssistantTool {
         'description': 'sleep: how long they slept, in hours',
       },
       'ml': {'type': 'number', 'description': 'water in ml (2 L = 2000)'},
-      'liters': {'type': 'number', 'description': 'water in litres'},
       'minutes': {'type': 'number', 'description': 'workout or focus length'},
       'period': {
         'type': 'string',
@@ -586,10 +596,10 @@ class LogPulseTool extends AssistantTool {
         'type': 'string',
         'description': 'ISO-8601 local time it happened (sleep: wake time)',
       },
-      'text': _str,
+      'text': {'type': 'string'},
     },
-    required: ['kind'],
-  );
+    'required': ['kind'],
+  };
 
   /// When the moment happened, or null for "now". An explicit `at` wins;
   /// otherwise `period` picks a sensible hour, never later than now.
