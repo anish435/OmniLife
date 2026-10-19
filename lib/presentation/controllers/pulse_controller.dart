@@ -167,7 +167,16 @@ class PulseController extends GetxController {
   Future<QuickLogResult?> log(
     LifeEventType type, {
     Map<String, dynamic> metadata = const {},
-  }) => _run(() => service.log(uid!, type, metadata: metadata));
+    DateTime? at,
+  }) => _run(() => service.log(uid!, type, metadata: metadata, at: at));
+
+  /// A night described after the fact; see [PulseService.logSleepSession].
+  Future<QuickLogResult?> logSleepSession({
+    required Duration duration,
+    DateTime? wakeAt,
+  }) => _run(
+    () => service.logSleepSession(uid!, duration: duration, wakeAt: wakeAt),
+  );
 
   Future<QuickLogResult?> startSleep() => _run(() => service.startSleep(uid!));
 

@@ -9,12 +9,17 @@ import '../../services/pulse/sleep_analyzer.dart';
 class QuickLogResult {
   const QuickLogResult({
     required this.event,
+    this.extraEvents = const [],
     this.sleepDuration,
     this.alreadyAsleep = false,
   });
 
   /// The recorded (or, for a repeated Sleep tap, the existing) event.
   final LifeEvent event;
+
+  /// Other events recorded together with [event] (a sleep's bedtime), so
+  /// Undo can remove the whole thing.
+  final List<LifeEvent> extraEvents;
 
   /// Set when a Wake tap closed an open sleep: the calculated duration.
   final Duration? sleepDuration;
@@ -53,6 +58,37 @@ class PulseService {
       metadata: _withDefaults(type, metadata, at ?? _now()),
     );
     return QuickLogResult(event: event);
+  }
+
+  /// A night the user describes after the fact ("I slept 3 hours"): records
+  /// a bedtime and a wake [duration] apart, the wake at [wakeAt] (default
+  /// now). Pairs up exactly like a Sleep tap and a Wake tap would.
+  Future<QuickLogResult> logSleepSession(
+    String uid, {
+    required Duration duration,
+    DateTime? wakeAt,
+  }) async {
+    final wake = wakeAt ?? _now();
+    final start = await _events.record(
+      uid,
+      LifeEventType.sleepStart,
+      at: wake.subtract(duration),
+      metadata: const {},
+    );
+    final end = await _events.record(
+      uid,
+      LifeEventType.wake,
+      at: wake,
+      metadata: {
+        'durationMinutes': duration.inMinutes,
+        'sleepStartId': start.id,
+      },
+    );
+    return QuickLogResult(
+      event: end,
+      extraEvents: [start],
+      sleepDuration: duration,
+    );
   }
 
   /// "Sleep": records bedtime. A second tap while already asleep does not

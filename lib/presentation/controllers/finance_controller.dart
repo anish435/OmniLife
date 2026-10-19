@@ -168,6 +168,21 @@ class FinanceController extends GetxController {
     }
   }
 
+  /// Another month's transactions, for comparisons. Empty when signed out or
+  /// when they cannot be read; never throws.
+  Future<List<FinanceTransaction>> transactionsForMonth(DateTime month) async {
+    if (_currentUserId.isEmpty) return const [];
+    try {
+      return await _financeRepository.getTransactions(
+        _currentUserId,
+        month: month.month,
+        year: month.year,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> loadBudgets() async {
     final uid = _currentUserId;
     if (uid.isEmpty) return;

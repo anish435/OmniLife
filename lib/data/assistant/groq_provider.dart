@@ -11,7 +11,7 @@ import '../../domain/assistant/ai_provider.dart';
 /// Free-tier aware: one request per call, a single retry when throttled
 /// (honouring `retry-after` if it is short) or on a 5xx, and a friendly
 /// message otherwise. No polling, no background traffic.
-class GroqProvider implements AiProvider {
+class GroqProvider implements AiProvider, TextCompleter {
   GroqProvider({
     required this.apiKey,
     http.Client? client,
@@ -48,7 +48,26 @@ class GroqProvider implements AiProvider {
   Future<AiResponse> chat({
     required List<AiMessage> messages,
     required List<AiToolSpec> tools,
+  }) => _send(messages, tools, maxTokens, false);
+
+  /// Plain completion for written advice: no tools, a caller-chosen token
+  /// budget, and a low reasoning effort on models that think first so the
+  /// budget is spent on the answer.
+  @override
+  Future<String?> complete({
+    required List<AiMessage> messages,
+    int maxTokens = 400,
   }) async {
+    final r = await _send(messages, const [], maxTokens, true);
+    return r.text;
+  }
+
+  Future<AiResponse> _send(
+    List<AiMessage> messages,
+    List<AiToolSpec> tools,
+    int maxTokens,
+    bool lowReasoning,
+  ) async {
     if (!isConfigured) {
       throw const AiProviderException(
         AiFailureKind.notConfigured,
@@ -59,6 +78,7 @@ class GroqProvider implements AiProvider {
       'model': model,
       'temperature': temperature,
       'max_tokens': maxTokens,
+      if (lowReasoning && model.contains('gpt-oss')) 'reasoning_effort': 'low',
       'messages': [
         for (final m in messages) {'role': m.role.name, 'content': m.content},
       ],
