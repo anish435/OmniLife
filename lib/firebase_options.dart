@@ -60,11 +60,10 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBZwHw-btr0w5oYT170hmnGWByWuu4EtlI',
-    appId: '1:778334231790:android:18de4b8be93f1f6158e7ff',
-    messagingSenderId: '778334231790',
-    projectId: 'gen-lang-client-0609884187',
-    databaseURL: 'https://gen-lang-client-0609884187-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'gen-lang-client-0609884187.firebasestorage.app',
+    apiKey: 'AIzaSyCb0y_hnKbgkO8wtxkemXYdblMwShHehQ4',
+    appId: '1:901170542258:android:f0957bd87c1a2bc4703bab',
+    messagingSenderId: '901170542258',
+    projectId: 'omnilife-a78bb',
+    storageBucket: 'omnilife-a78bb.firebasestorage.app',
   );
 }

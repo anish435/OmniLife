@@ -21,7 +21,7 @@ class FirebaseAuthDataSource {
         serverClientId: const String.fromEnvironment(
           'GOOGLE_SERVER_CLIENT_ID',
           defaultValue:
-              '489324966392-cgmpbpdnal7tsv1sdu2phn824fr6oddj.apps.googleusercontent.com',
+              '901170542258-c5hocijoe381ret1d3q9ei1842i9afbu.apps.googleusercontent.com',
         ),
       );
 
