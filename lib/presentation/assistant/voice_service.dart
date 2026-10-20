@@ -115,7 +115,7 @@ class DeviceVoiceService implements VoiceService {
           partialResults: true,
           cancelOnError: true,
           listenMode: ListenMode.dictation,
-          pauseFor: const Duration(seconds: 3),
+          pauseFor: const Duration(seconds: 6),
           listenFor: const Duration(seconds: 30),
         ),
       );

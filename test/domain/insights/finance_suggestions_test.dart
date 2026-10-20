@@ -271,7 +271,7 @@ void main() {
       expect(first!.sections, hasLength(5));
       expect(second!.sections, hasLength(5));
       expect(p.requests, hasLength(1));
-      expect(cache.store.keys.single, snap.cacheKey);
+      expect(cache.store.keys.single, 'v2_${snap.cacheKey}');
       // Changed data is a new request.
       await svc.write(_snap([_tx(10, TransactionCategory.food)]));
       expect(p.requests, hasLength(2));

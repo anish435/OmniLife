@@ -62,3 +62,5 @@ firebase.json
 .firebaserc
 project-plan.md
 implementation_plan_no_ai.md
+*.local
+lib/firebase_options.dart.local
