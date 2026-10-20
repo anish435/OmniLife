@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
@@ -80,12 +81,20 @@ class DeviceVoiceService implements VoiceService {
   }
 
   void _handleError(SpeechRecognitionError e) {
-    final msg = e.errorMsg;
-    final issue = msg.contains('permission')
+    debugPrint('[VoiceService] speech error: ${e.errorMsg}');
+    final msg = e.errorMsg.toLowerCase();
+    final issue = (msg.contains('permission') ||
+            msg.contains('not-allowed') ||
+            msg.contains('not_allowed'))
         ? VoiceIssue.permissionDenied
-        : (msg == 'error_no_match' || msg == 'error_speech_timeout')
+        : (msg == 'error_no_match' ||
+                msg == 'error_speech_timeout' ||
+                msg.contains('no-speech') ||
+                msg.contains('no_speech'))
         ? VoiceIssue.noSpeech
-        : msg.contains('not_supported') || msg.contains('language')
+        : (msg.contains('not_supported') ||
+                msg.contains('language') ||
+                msg.contains('service-not-allowed'))
         ? VoiceIssue.unsupported
         : VoiceIssue.failed;
     _onIssue?.call(issue);
@@ -120,7 +129,8 @@ class DeviceVoiceService implements VoiceService {
         ),
       );
       return null;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[VoiceService] listen exception: $e\n$st');
       return VoiceIssue.failed;
     }
   }
