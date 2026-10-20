@@ -324,6 +324,13 @@ class AssistantController extends GetxController {
     _onVoiceStopped();
   }
 
+  Future<void> cancelListening() async {
+    _voiceHandled = true;
+    partialTranscript.value = '';
+    status.value = AssistantStatus.idle;
+    await voice.stop();
+  }
+
   void _onVoiceFinal(String text) {
     if (_voiceHandled) return;
     _voiceHandled = true;

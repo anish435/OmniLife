@@ -31,6 +31,7 @@ import 'focus_push_bindings.dart';
 // --- Maps / GPS and Sensors modules (additive) ---
 import 'location_sensor_bindings.dart';
 import 'assistant_bindings.dart';
+import '../services/sensors/shake_assistant_service.dart';
 
 /// Registers app-wide dependencies once, at startup.
 ///
@@ -73,6 +74,9 @@ class InitialBinding extends Bindings {
     // --- Maps / GPS and Sensors modules (additive; lazy, no permission
     // prompts and no sensor access until the user opens those screens) ---
     registerLocationSensorServices();
+    if (Get.isRegistered<ShakeAssistantService>()) {
+      Get.find<ShakeAssistantService>();
+    }
 
     // Notification Service (Rubric D2)
     final notifService = Get.put(NotificationService(), permanent: true);

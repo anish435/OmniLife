@@ -12,6 +12,7 @@ import '../services/location/geolocator_location_service.dart';
 import '../services/location/location_service.dart';
 import '../services/sensors/device_sensor_service.dart';
 import '../services/sensors/sensor_service.dart';
+import '../services/sensors/shake_assistant_service.dart';
 
 /// Registers the Maps/GPS and Sensors services and repositories.
 ///
@@ -53,6 +54,12 @@ void registerLocationSensorServices() {
           }
         },
       ),
+      fenix: true,
+    );
+  }
+  if (!Get.isRegistered<ShakeAssistantService>()) {
+    Get.lazyPut<ShakeAssistantService>(
+      () => ShakeAssistantService(sensors: Get.find<SensorService>()),
       fenix: true,
     );
   }
