@@ -16,7 +16,14 @@ class FirebaseAuthDataSource {
   final GoogleSignIn? _injectedGoogleSignIn;
 
   GoogleSignIn get _googleSignIn =>
-      _injectedGoogleSignIn ?? GoogleSignIn();
+      _injectedGoogleSignIn ??
+      GoogleSignIn(
+        serverClientId: const String.fromEnvironment(
+          'GOOGLE_SERVER_CLIENT_ID',
+          defaultValue:
+              '489324966392-cgmpbpdnal7tsv1sdu2phn824fr6oddj.apps.googleusercontent.com',
+        ),
+      );
 
   Stream<fb.User?> authStateChanges() => _firebaseAuth.authStateChanges();
 
@@ -64,6 +71,12 @@ class FirebaseAuthDataSource {
         );
       }
       final googleAuth = await googleUser.authentication;
+      if (googleAuth.idToken == null && googleAuth.accessToken == null) {
+        throw fb.FirebaseAuthException(
+          code: 'ERROR_NO_TOKEN',
+          message: 'Failed to obtain Google authentication tokens.',
+        );
+      }
       final credential = fb.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,

@@ -29,13 +29,19 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       return await action();
     } on fb.FirebaseAuthException catch (e) {
-      throw AuthFailure(friendlyAuthMessage(e.code), code: e.code);
+      throw AuthFailure(
+        friendlyAuthMessage(e.code, fallback: e.message),
+        code: e.code,
+      );
     } on PlatformException catch (e) {
       // google_sign_in reports problems this way (network_error, etc.).
       final code = e.code == 'network_error'
           ? 'network-request-failed'
           : e.code;
-      throw AuthFailure(friendlyAuthMessage(code), code: code);
+      throw AuthFailure(
+        friendlyAuthMessage(code, fallback: e.message),
+        code: code,
+      );
     } on AuthFailure {
       rethrow;
     } catch (_) {

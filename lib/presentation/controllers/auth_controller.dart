@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../app/routes/app_routes.dart';
@@ -128,7 +129,8 @@ class AuthController extends GetxController {
         return;
       }
       errorMessage.value = e.message;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Google Sign-In unhandled error: $e');
       errorMessage.value = 'Something went wrong. Please try again.';
     } finally {
       isGoogleLoading.value = false;
