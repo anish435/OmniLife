@@ -53,6 +53,8 @@ app.*.map.json
 !.env.example
 *.secrets.json
 android/key.properties
+*.keystore
+*.jks
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 serviceAccountKey.json
