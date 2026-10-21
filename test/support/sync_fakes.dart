@@ -5,7 +5,7 @@ import 'package:omnilife/core/sync/sync_operation.dart';
 import 'package:omnilife/core/sync/sync_outbox.dart';
 
 /// Remote writer that records what the engine uploads.
-class RecordingRemoteWriter implements RemoteWriter {
+class RecordingRemoteWriter extends RemoteWriter {
   final applied = <SyncOperation>[];
 
   @override

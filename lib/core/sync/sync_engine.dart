@@ -59,6 +59,8 @@ class SyncEngine {
     this.baseBackoff = const Duration(seconds: 2),
     this.maxBackoff = const Duration(minutes: 5),
     this.pollInterval = const Duration(seconds: 30),
+    this.batchSize = 25,
+    this.concurrency = 4,
   }) : _now = now ?? DateTime.now,
        _random = random ?? Random();
 
@@ -76,6 +78,12 @@ class SyncEngine {
   final Duration baseBackoff;
   final Duration maxBackoff;
   final Duration pollInterval;
+
+  /// Operations grouped into one remote round trip.
+  final int batchSize;
+
+  /// Chunks uploaded at the same time.
+  final int concurrency;
 
   final _snapshots = StreamController<SyncSnapshot>.broadcast();
   final _conflicts = StreamController<SyncConflict>.broadcast();
@@ -248,35 +256,100 @@ class SyncEngine {
         .toList();
     if (due.isEmpty) return;
     await _publish(syncing: true);
-    for (final op in due) {
-      try {
-        final result = await remote.apply(op);
-        // Only drop the queued op if it was not replaced while uploading.
-        final latest = await outbox.get(op.id);
-        if (latest != null && _sameIntent(latest, op)) {
-          await outbox.remove(op.id);
-        }
-        if (result == RemoteWriteResult.skippedRemoteNewer &&
-            !_conflicts.isClosed) {
-          _conflicts.add(SyncConflict(op.collection, op.docId));
-        }
-      } catch (e) {
-        final attempts = op.attempts + 1;
-        final failed = attempts >= maxAttempts;
-        await outbox.upsert(
-          op.copyWith(
-            attempts: attempts,
-            lastError: _describe(e),
-            state: failed ? SyncOpState.failed : SyncOpState.pending,
-            nextAttemptAtMs: _now()
-                .add(backoffFor(attempts))
-                .millisecondsSinceEpoch,
-          ),
-        );
-        _online = await connectivity.isOnline;
-        if (!_online) break;
+    // Each document has at most one queued operation (the outbox coalesces
+    // by collection/docId), so operations in different chunks never touch
+    // the same document and per-document order is preserved. Chunks upload
+    // in parallel, a few at a time.
+    final chunks = <List<SyncOperation>>[
+      for (var i = 0; i < due.length; i += batchSize)
+        due.sublist(i, min(i + batchSize, due.length)),
+    ];
+    var next = 0;
+    var stop = false;
+    Future<void> worker() async {
+      while (!stop && next < chunks.length) {
+        final chunk = chunks[next++];
+        final keepGoing = await _processChunk(chunk);
+        if (!keepGoing) stop = true;
+        await _publish(syncing: true);
       }
     }
+
+    await Future.wait([
+      for (var i = 0; i < min(concurrency, chunks.length); i++) worker(),
+    ]);
+  }
+
+  /// Uploads one chunk. Returns false when the device went offline and the
+  /// rest of the pass should stop.
+  Future<bool> _processChunk(List<SyncOperation> chunk) async {
+    List<RemoteOpOutcome> outcomes;
+    try {
+      outcomes = await remote.applyBatch(chunk);
+    } catch (e) {
+      _online = await connectivity.isOnline;
+      if (!_online) return false;
+      if (chunk.length == 1) {
+        outcomes = [RemoteOpOutcome.failed(e)];
+      } else {
+        // One bad document should not hold back the others: retry the
+        // chunk one operation at a time.
+        outcomes = [];
+        for (final op in chunk) {
+          try {
+            outcomes.add(RemoteOpOutcome.done(await remote.apply(op)));
+          } catch (err) {
+            outcomes.add(RemoteOpOutcome.failed(err));
+          }
+        }
+      }
+    }
+    var failedAny = false;
+    for (var i = 0; i < chunk.length; i++) {
+      final op = chunk[i];
+      final outcome = outcomes[i];
+      if (outcome.isFailure) {
+        failedAny = true;
+        await _recordFailure(op, outcome.error!);
+      } else {
+        await _recordSuccess(op, outcome.result!);
+      }
+    }
+    if (failedAny) {
+      _online = await connectivity.isOnline;
+      if (!_online) return false;
+    }
+    return true;
+  }
+
+  Future<void> _recordSuccess(
+    SyncOperation op,
+    RemoteWriteResult result,
+  ) async {
+    // Only drop the queued op if it was not replaced while uploading.
+    final latest = await outbox.get(op.id);
+    if (latest != null && _sameIntent(latest, op)) {
+      await outbox.remove(op.id);
+    }
+    if (result == RemoteWriteResult.skippedRemoteNewer &&
+        !_conflicts.isClosed) {
+      _conflicts.add(SyncConflict(op.collection, op.docId));
+    }
+  }
+
+  Future<void> _recordFailure(SyncOperation op, Object e) async {
+    final attempts = op.attempts + 1;
+    final failed = attempts >= maxAttempts;
+    await outbox.upsert(
+      op.copyWith(
+        attempts: attempts,
+        lastError: _describe(e),
+        state: failed ? SyncOpState.failed : SyncOpState.pending,
+        nextAttemptAtMs: _now()
+            .add(backoffFor(attempts))
+            .millisecondsSinceEpoch,
+      ),
+    );
   }
 
   bool _belongsToCurrentUser(SyncOperation op) {

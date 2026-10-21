@@ -10,7 +10,7 @@ import 'package:omnilife/core/sync/sync_engine.dart';
 import 'package:omnilife/core/sync/sync_operation.dart';
 import 'package:omnilife/core/sync/sync_outbox.dart';
 
-class FakeRemoteWriter implements RemoteWriter {
+class FakeRemoteWriter extends RemoteWriter {
   final applied = <SyncOperation>[];
   final failuresToThrow = <Object>[];
   final remoteNewerDocs = <String>{};
@@ -27,6 +27,7 @@ class FakeRemoteWriter implements RemoteWriter {
 }
 
 void main() {
+  _batchGroup();
   late MemorySyncOutbox outbox;
   late FakeRemoteWriter remote;
   late FakeConnectivityMonitor connectivity;
@@ -323,7 +324,7 @@ void main() {
   });
 }
 
-class _ReplacingRemote implements RemoteWriter {
+class _ReplacingRemote extends RemoteWriter {
   _ReplacingRemote({required this.onApply});
 
   final Future<void> Function() onApply;
@@ -337,4 +338,145 @@ class _ReplacingRemote implements RemoteWriter {
     if (calls == 1) await onApply();
     return RemoteWriteResult.applied;
   }
+}
+
+/// Counts round trips and how many ran at the same time.
+class _SlowBatchRemote extends RemoteWriter {
+  _SlowBatchRemote({this.delay = const Duration(milliseconds: 40)});
+
+  final Duration delay;
+  final batchSizes = <int>[];
+  final appliedIds = <String>[];
+  final badDocs = <String>{};
+  int _running = 0;
+  int maxRunning = 0;
+
+  Future<void> _work() async {
+    _running++;
+    if (_running > maxRunning) maxRunning = _running;
+    await Future<void>.delayed(delay);
+    _running--;
+  }
+
+  @override
+  Future<RemoteWriteResult> apply(SyncOperation op) async {
+    await _work();
+    if (badDocs.contains(op.id)) throw StateError('permission denied');
+    appliedIds.add(op.id);
+    return RemoteWriteResult.applied;
+  }
+
+  @override
+  Future<List<RemoteOpOutcome>> applyBatch(List<SyncOperation> ops) async {
+    await _work();
+    batchSizes.add(ops.length);
+    if (ops.any((o) => badDocs.contains(o.id))) {
+      throw StateError('batch rejected');
+    }
+    appliedIds.addAll(ops.map((o) => o.id));
+    return [
+      for (final _ in ops)
+        const RemoteOpOutcome.done(RemoteWriteResult.applied),
+    ];
+  }
+}
+
+void _batchGroup() {
+  group('batched upload', () {
+    late MemorySyncOutbox outbox;
+    late FakeConnectivityMonitor connectivity;
+    late _SlowBatchRemote remote;
+    late SyncEngine engine;
+
+    setUp(() {
+      outbox = MemorySyncOutbox();
+      connectivity = FakeConnectivityMonitor(online: true);
+      remote = _SlowBatchRemote();
+      engine = SyncEngine(
+        outbox: outbox,
+        remote: remote,
+        connectivity: connectivity,
+        random: Random(1),
+        maxAttempts: 3,
+      );
+    });
+
+    tearDown(() => engine.dispose());
+
+    Future<void> seed(int n) async {
+      for (var i = 0; i < n; i++) {
+        await outbox.upsert(
+          SyncOperation(
+            uid: 'u1',
+            collection: 'tasks',
+            docId: 'd$i',
+            type: SyncOpType.set,
+            data: {'title': 't$i'},
+            updatedAtMs: 1,
+            createdAtMs: i,
+          ),
+        );
+      }
+    }
+
+    test('75 queued writes go up in a few parallel round trips', () async {
+      await seed(75);
+      final seen = <SyncStatus>[];
+      final sub = engine.snapshots.listen((s) => seen.add(s.status));
+
+      await engine.flush();
+      await sub.cancel();
+
+      expect(remote.batchSizes.fold<int>(0, (a, b) => a + b), 75);
+      expect(remote.batchSizes.length, lessThanOrEqualTo(4));
+      expect(remote.maxRunning, greaterThan(1));
+      expect(remote.appliedIds.toSet(), hasLength(75));
+      expect(await outbox.all(), isEmpty);
+      expect(seen.first, SyncStatus.syncing);
+      expect(engine.current.status, SyncStatus.synced);
+    });
+
+    test(
+      'a rejected batch retries one by one so only the bad doc fails',
+      () async {
+        await seed(6);
+        remote.badDocs.add('tasks/d3');
+
+        await engine.flush();
+
+        expect(remote.appliedIds.toSet(), hasLength(5));
+        final left = await outbox.all();
+        expect(left.map((o) => o.id), ['tasks/d3']);
+        expect(left.single.attempts, 1);
+        expect(left.single.state, SyncOpState.pending);
+      },
+    );
+
+    test('other users operations are not uploaded', () async {
+      await seed(3);
+      await outbox.upsert(
+        const SyncOperation(
+          uid: 'u2',
+          collection: 'tasks',
+          docId: 'other',
+          type: SyncOpType.set,
+          data: {'title': 'x'},
+          updatedAtMs: 1,
+          createdAtMs: 99,
+        ),
+      );
+      final scoped = SyncEngine(
+        outbox: outbox,
+        remote: remote,
+        connectivity: connectivity,
+        currentUid: () => 'u1',
+      );
+      addTearDown(scoped.dispose);
+
+      await scoped.flush();
+
+      expect(remote.appliedIds, isNot(contains('tasks/other')));
+      expect((await outbox.all()).single.id, 'tasks/other');
+    });
+  });
 }

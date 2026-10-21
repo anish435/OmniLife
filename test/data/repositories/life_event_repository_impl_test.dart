@@ -11,7 +11,7 @@ import 'package:omnilife/data/repositories/life_event_repository_impl.dart';
 import 'package:omnilife/domain/entities/life_event.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-class _RecordingWriter implements RemoteWriter {
+class _RecordingWriter extends RemoteWriter {
   final applied = <SyncOperation>[];
 
   @override
