@@ -43,6 +43,10 @@ class NotesController extends GetxController {
   final archivedNotes = <Note>[].obs;
 
   final isLoading = false.obs;
+
+  /// True once the first load has finished, so screens can show a neutral
+  /// placeholder instead of a misleading zero.
+  final hasLoaded = false.obs;
   final errorMessage = Rx<String?>(null);
 
   /// Raw text in the search box (updates on every keystroke).
@@ -91,6 +95,7 @@ class NotesController extends GetxController {
       errorMessage.value = 'Failed to load notes: $e';
     } finally {
       isLoading.value = false;
+      hasLoaded.value = true;
     }
   }
 

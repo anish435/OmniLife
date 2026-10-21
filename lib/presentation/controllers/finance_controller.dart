@@ -51,6 +51,10 @@ class FinanceController extends GetxController {
   final currentMonth = DateTime.now().obs;
 
   final isLoading = false.obs;
+
+  /// True once the first load has finished, so screens can show a neutral
+  /// placeholder instead of a misleading zero.
+  final hasLoaded = false.obs;
   final errorMessage = Rx<String?>(null);
 
   /// A short message about the last export or budget change, for the page
@@ -153,6 +157,7 @@ class FinanceController extends GetxController {
           'Could not load your transactions. Please try again.';
     } finally {
       isLoading.value = false;
+      hasLoaded.value = true;
     }
     await loadTrend();
   }

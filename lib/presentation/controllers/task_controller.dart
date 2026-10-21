@@ -31,6 +31,10 @@ class TaskController extends GetxController {
 
   final tasks = <Task>[].obs;
   final isLoading = false.obs;
+
+  /// True once the first load has finished, so screens can show a neutral
+  /// placeholder instead of a misleading zero.
+  final hasLoaded = false.obs;
   final errorMessage = RxnString();
 
   final selectedFilter = TaskFilter.all.obs;
@@ -70,6 +74,7 @@ class TaskController extends GetxController {
       errorMessage.value = 'Failed to load tasks: $e';
     } finally {
       isLoading.value = false;
+      hasLoaded.value = true;
     }
   }
 

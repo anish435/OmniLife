@@ -342,9 +342,9 @@ class _ReplacingRemote extends RemoteWriter {
 
 /// Counts round trips and how many ran at the same time.
 class _SlowBatchRemote extends RemoteWriter {
-  _SlowBatchRemote({this.delay = const Duration(milliseconds: 40)});
+  _SlowBatchRemote();
 
-  final Duration delay;
+  final Duration delay = const Duration(milliseconds: 40);
   final batchSizes = <int>[];
   final appliedIds = <String>[];
   final badDocs = <String>{};
