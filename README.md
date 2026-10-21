@@ -165,12 +165,13 @@ through `tools/android-build.cmd`. See `docs/android-build-wsl.md`.
 
 ### Signing
 
-`android/key.properties` and any `*.keystore` or `*.jks` file are git-ignored
-and must never be committed. At the time of writing, `android/app/build.gradle.kts`
-signs the release build with the debug key (a TODO in that file), so the
-current APK and AAB are installable and testable but not suitable for
-publishing. To publish, create an upload keystore, put its path and passwords
-in `android/key.properties`, and add a release `signingConfig` that reads it.
+`android/key.properties` and any `*.keystore` or `*.jks` file are git-ignored and must never be committed. Release builds are signed from `android/key.properties` (copy `android/key.properties.example` and point `storeFile` at your keystore). Without that file the build falls back to the debug key so teammates can still build locally. Create a keystore with:
+
+```bash
+keytool -genkeypair -v -keystore omnilife-release.keystore -alias omnilife -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Register the keystore's SHA-1 and SHA-256 in the Firebase console (Project settings, Android app) so Google sign-in works, then download a fresh `google-services.json`.
 
 ## Tests
 
@@ -224,5 +225,5 @@ example "Likhith Ponnada" and "Kotikalapudi Anish"). Run
 - Notifications on web are shown inside the app only; scheduled system notifications need an Android phone.
 - Location, geofencing, step counting and the microphone need a physical phone and granted permissions.
 - The assistant needs `GROQ_API_KEY`; without it the chat explains that it is not configured.
-- Release builds are currently signed with the debug key (see Signing).
+- Release builds need your own keystore (see Signing); without it they use the debug key.
 - There is no booking module.

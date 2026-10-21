@@ -40,13 +40,13 @@ big to share.
 
 ## Sizes to show in the viva
 
-Fill these in from the build that is demonstrated (the files are not
-committed, so check them on the build machine):
+Sizes of the build prepared for the demo (the files are not committed, so
+check them on the build machine):
 
 | File | Size (MB) | Command to read it |
 |---|---|---|
-| app-release.apk | ______ | `ls -lh build/app/outputs/flutter-apk/app-release.apk` |
-| app-release.aab | ______ | `ls -lh build/app/outputs/bundle/release/app-release.aab` |
+| app-release.apk | 73.6 MB (73,573,612 bytes) | `ls -lh build/app/outputs/flutter-apk/app-release.apk` |
+| app-release.aab | 73.8 MB (73,821,502 bytes) | `ls -lh build/app/outputs/bundle/release/app-release.aab` |
 
 Flutter also prints the size at the end of each build ("Built ... (xx.xMB)").
 The AAB file itself is usually similar to or larger than the universal APK,

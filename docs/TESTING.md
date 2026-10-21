@@ -18,10 +18,10 @@ Automated run of `flutter test` on 2026-10-21 (Windows):
 
 | Measure | Value |
 |---|---|
-| Automated tests run | 821 |
-| Passed | 820 |
-| Failed | 1 |
-| Failing test | `test/domain/insights/finance_suggestions_test.dart`: "written version one call per month and data, cached afterwards" (expects the old cache key, see BUG-14) |
+| Automated tests run | 862 |
+| Passed | 862 |
+| Failed | 0 |
+| Stability | Four consecutive full runs passed (see BUG-15 for the random failures that were fixed) |
 
 Manual test cases cover what an automated test cannot prove: a notification
 on a real phone, GPS, pedometer, microphone, the real Firebase console.
@@ -139,8 +139,13 @@ been run yet and will be shown live. Fail means it was run and did not pass.
 | BUG-09 | Android release build failed | permission_handler requires compileSdk 37 | compileSdk set to 37 in android/app/build.gradle.kts; desugaring enabled for notifications | 1e105ff | Fixed |
 | BUG-10 | Old advice text shown after the prompt changed | Cached advice was keyed only by month and data | Cache key carries a version prefix (v2_...) | c7ee847 | Fixed |
 | BUG-11 | Sync flush races and in-flight edits lost | Flushes ran concurrently and a write replaced during upload was removed afterwards | One flush at a time, replaced-in-flight writes are kept, only the signed-in user's writes upload | 3b84149, 2312c1f | Fixed |
-| BUG-12 | Receipt uploaded under a wrong file name | The file name contained the literal text ${Uuid().v4()} instead of a generated id | String interpolation corrected where the receipt storage path is built (lib/presentation/controllers/finance_controller.dart, receiptStoragePath) | (confirm commit id with the author) | Fixed (verify) |
-| BUG-13 | Deployed Firestore rules were open test-mode rules | The project still used the default rules from creation | Per-user rules from firestore.rules deployed by the project owner on <date to be confirmed> | (deployment, no commit) | Fixed (verify) |
-| BUG-14 | Unit test for cached written advice fails | Test still expects the cache key finance_2026-10_... but BUG-10 added the v2_ prefix | Update the expected key in test/domain/insights/finance_suggestions_test.dart (line 274) | - | Open |
+| BUG-12 | Receipt uploaded under a wrong file name | The file name contained the literal text ${Uuid().v4()} instead of a generated id | String interpolation corrected where the receipt storage path is built (lib/presentation/controllers/finance_controller.dart, receiptStoragePath) | 42ee149 | Fixed |
+| BUG-13 | Deployed Firestore rules were open test-mode rules | The project still used the default rules from creation | Per-user rules from firestore.rules deployed with `firebase deploy --only firestore:rules` on 2026-10-21. Before deploying, 4115 allow/deny cases built from every real document were checked with the Firebase rules testing API (owner allowed, other users and signed-out denied) and all passed; then the web app was loaded cold and a write synced | (deployment, no commit) | Fixed |
+| BUG-14 | Unit test for cached written advice failed | Test expected the cache key finance_2026-10_... but BUG-10 added the v2_ prefix | Expected key updated in test/domain/insights/finance_suggestions_test.dart | 6f3cdb3 | Fixed |
+| BUG-15 | A few tests failed at random in full runs | Controllers read device storage on start and the tests had no mock, so a MissingPluginException arrived after a test finished; the error reporter then crashed on a stack-trace assertion and hid the cause | test/flutter_test_config.dart mocks SharedPreferences and demangles stack traces | 6f3cdb3 | Fixed |
+| BUG-16 | Finance accepted a transaction while signed out (guest-user id) | A recent change made the user id fall back to guest-user | Empty id restored so it says "Sign in to save this." and writes nothing; sample data refuses when signed out | (code-fix branch) | Fixed |
+| BUG-17 | Sync showed Syncing for minutes after loading sample data | Queued writes were uploaded one at a time, each in its own transaction | Uploads now go in parallel chunks, one transaction per chunk, order per document kept | 4d5b5e4 | Fixed |
+| BUG-18 | Microphone button covered the start of list rows; tile counts flashed 0 | Floating button over content; counts shown before first load | Mic has its own strip; counts show a dash until the first load finishes | (code-fix branch) | Fixed |
+| BUG-19 | Wellness water showed 0 ml while Pulse showed 500 ml | Two separate stores | Wellness reads and writes the Pulse water events | (code-fix branch) | Fixed |
+| BUG-20 | Event creation after 11 PM failed validation | Default end time wrapped to 00:00 | End clamped to 23:59 | 595254d | Fixed |
 
-BUG-12 and BUG-13 need confirmation by the member who made the change (commit id and deployment date). `Fixed (verify)` stays until then.

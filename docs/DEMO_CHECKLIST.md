@@ -67,3 +67,15 @@ Dashboard and Next up, Tasks, Calendar, Notes (checklist to tasks), Habits
 (heatmap and streak), Finance (chart, budget, PDF), Pulse (one-tap log, day
 replay, sleep), Focus, Reminders, Assistant (voice: "water and sleep" in one
 sentence), Map and Sensors (phone only).
+
+## Before the demo: devices and data
+
+- All devices (phones and the web page) now use the same Firebase project,
+  `gen-lang-client-0609884187`, so data and reminders sync between them. Install the
+  same release APK on every phone (the one signed with the OmniLife release key).
+- A new account starts empty. On the dashboard, use "Load sample data" (also in the
+  avatar menu) so the screens and Insights have something to show. Wait until the
+  status badge says "Synced" before showing the Firebase console.
+- Release APK and AAB are built with `tools\android-build.cmd release aab`; the AAB
+  is signed with the same key. Keep `android/omnilife-release.keystore` and
+  `android/key.properties` safe; they are not in git.
