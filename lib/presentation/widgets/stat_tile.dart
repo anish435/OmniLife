@@ -49,10 +49,16 @@ class StatTile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    label.toUpperCase(),
-                    style: AppTypography.sectionLabel(
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  Flexible(
+                    child: Text(
+                      label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.sectionLabel(
+                        theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
                     ),
                   ),
                   if (icon != null)
@@ -84,6 +90,8 @@ class StatTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   sublabel!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall,
                 ),
               ],

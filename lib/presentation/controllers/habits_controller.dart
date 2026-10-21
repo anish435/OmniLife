@@ -35,6 +35,10 @@ class HabitsController extends GetxController {
   final habitLogs = <String, RxList<String>>{}.obs;
 
   final isLoading = false.obs;
+
+  /// True once the first load has finished, so screens can show a neutral
+  /// placeholder instead of a misleading zero.
+  final hasLoaded = false.obs;
   final errorMessage = Rx<String?>(null);
 
   String get _currentUserId => _authController.currentUser.value?.uid ?? '';
@@ -77,6 +81,7 @@ class HabitsController extends GetxController {
       errorMessage.value = 'Failed to load habits: $e';
     } finally {
       isLoading.value = false;
+      hasLoaded.value = true;
     }
   }
 

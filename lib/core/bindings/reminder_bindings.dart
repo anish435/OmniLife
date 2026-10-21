@@ -43,11 +43,9 @@ void registerReminderDependencies() {
       () => ReminderServiceImpl(
         repository: Get.find<ReminderRepository>(),
         scheduler: Get.find<ReminderScheduler>(),
-        uidProvider: () {
-          if (!Get.isRegistered<AuthController>()) return 'guest-user';
-          return Get.find<AuthController>().currentUser.value?.uid ??
-              'guest-user';
-        },
+        uidProvider: () => Get.isRegistered<AuthController>()
+            ? Get.find<AuthController>().currentUser.value?.uid
+            : null,
       ),
       fenix: true,
     );

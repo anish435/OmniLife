@@ -25,6 +25,7 @@ import '../../widgets/pulse/pulse_quick_log.dart';
 import '../../widgets/sync_status_indicator.dart';
 import '../../controllers/pulse_controller.dart';
 import '../../widgets/progress_ring.dart';
+import '../../widgets/sample_data_prompt.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/stat_tile.dart';
 import '../../../core/services/notification_service.dart';
@@ -126,14 +127,16 @@ class DashboardPage extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-      body: Stack(
+      body: Column(
         children: [
-      SafeArea(
+      Expanded(
+      child: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1040),
             child: ListView(
-              padding: EdgeInsets.fromLTRB(gutter, 16, gutter, 88),
+              padding: EdgeInsets.fromLTRB(gutter, 16, gutter, 16),
               children: [
                 // 1. Editorial Header Bar (Date Caption + Greeting + Initial Avatar Menu)
                 Row(
@@ -218,19 +221,7 @@ class DashboardPage extends StatelessWidget {
                           if (action == 'theme') {
                             appController.toggleTheme();
                           } else if (action == 'demo_data') {
-                            final success = await DemoDataSeeder.seedAll();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    success
-                                        ? 'Demo data loaded successfully across all modules!'
-                                        : 'Failed to load some demo data.',
-                                  ),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
+                            await toggleSampleData(context);
                           } else if (action == 'logout') {
                             authController.logout();
                           }
@@ -241,13 +232,15 @@ class DashboardPage extends StatelessWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.auto_awesome,
+                                  Icons.science_outlined,
                                   size: 18,
                                   color: AppColors.primary,
                                 ),
                                 const SizedBox(width: 10),
-                                const Text(
-                                  'Load demo data',
+                                Text(
+                                  DemoDataSeeder.isDemoMode.value
+                                      ? 'Remove sample data'
+                                      : 'Load sample data',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -326,6 +319,9 @@ class DashboardPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
+
+                // Only while the account has no data at all
+                const SampleDataPrompt(),
 
                 // 2. Hero: Today's Progress Wide Surface-Raised Block
                 Obx(() {
@@ -488,11 +484,35 @@ class DashboardPage extends StatelessWidget {
                 // 5. Modules Grid (2-column, no ACTIVE badges, item counts)
                 SectionLabel(title: 'Modules'),
                 Obx(() {
-                  final taskCount = taskController.tasks.length;
-                  final eventCount = calendarController.events.length;
-                  final notesCount = notesController?.notes.length ?? 0;
-                  final habitsCount = habitsController?.habits.length ?? 0;
-                  final txCount = financeController?.transactions.length ?? 0;
+                  // A dash until each module's first load has finished, so
+                  // a slow load never reads as "0".
+                  String count(bool loaded, int n, String unit) =>
+                      loaded ? '$n $unit' : '-';
+                  final taskLabel = count(
+                    taskController.hasLoaded.value,
+                    taskController.tasks.length,
+                    'items',
+                  );
+                  final eventLabel = count(
+                    calendarController.hasLoaded.value,
+                    calendarController.events.length,
+                    'events',
+                  );
+                  final notesLabel = count(
+                    notesController?.hasLoaded.value ?? true,
+                    notesController?.notes.length ?? 0,
+                    'notes',
+                  );
+                  final habitsLabel = count(
+                    habitsController?.hasLoaded.value ?? true,
+                    habitsController?.habits.length ?? 0,
+                    'habits',
+                  );
+                  final txLabel = count(
+                    financeController?.hasLoaded.value ?? true,
+                    financeController?.transactions.length ?? 0,
+                    'trans.',
+                  );
 
                   return LayoutBuilder(
                     builder: (context, constraints) {
@@ -518,35 +538,35 @@ class DashboardPage extends StatelessWidget {
                             name: 'Tasks',
                             icon: Icons.check_box_outlined,
                             accentColor: AppColors.moduleTasks,
-                            countLabel: '$taskCount items',
+                            countLabel: taskLabel,
                             onTap: () => Get.toNamed(AppRoutes.tasks),
                           ),
                           ModuleTile(
                             name: 'Calendar',
                             icon: Icons.calendar_today_outlined,
                             accentColor: AppColors.moduleCalendar,
-                            countLabel: '$eventCount events',
+                            countLabel: eventLabel,
                             onTap: () => Get.toNamed(AppRoutes.calendar),
                           ),
                           ModuleTile(
                             name: 'Notes',
                             icon: Icons.notes_outlined,
                             accentColor: AppColors.moduleNotes,
-                            countLabel: '$notesCount notes',
+                            countLabel: notesLabel,
                             onTap: () => Get.toNamed(AppRoutes.notes),
                           ),
                           ModuleTile(
                             name: 'Habits',
                             icon: Icons.track_changes_outlined,
                             accentColor: AppColors.moduleHabits,
-                            countLabel: '$habitsCount habits',
+                            countLabel: habitsLabel,
                             onTap: () => Get.toNamed(AppRoutes.habits),
                           ),
                           ModuleTile(
                             name: 'Finance',
                             icon: Icons.account_balance_wallet_outlined,
                             accentColor: AppColors.moduleFinance,
-                            countLabel: '$txCount trans.',
+                            countLabel: txLabel,
                             onTap: () => Get.toNamed(AppRoutes.finance),
                           ),
                           ModuleTile(
@@ -609,12 +629,22 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ),
-      // Assistant: a quiet mic in the bottom-left corner, clear of the
-      // add-task button on the right.
-      Positioned(
-        left: gutter,
-        bottom: 16,
-        child: const SafeArea(child: AssistantMicFab()),
+      ),
+      // Assistant: a quiet mic in its own strip under the content, so it
+      // never covers a row. The add-task button floats over the right side
+      // of the same strip.
+      SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 76,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(left: gutter),
+              child: const AssistantMicFab(),
+            ),
+          ),
+        ),
       ),
         ],
       ),
@@ -794,10 +824,14 @@ class DashboardPage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Nothing scheduled.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: Text(
+                      'Nothing scheduled.',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -904,7 +938,9 @@ class DashboardPage extends StatelessWidget {
           child: notesController != null
               ? Obx(() => StatTile(
                     label: 'Notes',
-                    value: '${notesController.notes.length}',
+                    value: notesController.hasLoaded.value
+                        ? '${notesController.notes.length}'
+                        : '-',
                     sublabel: 'Pinned & quick notes',
                     icon: Icons.notes_outlined,
                     iconColor: AppColors.moduleNotes,
@@ -924,7 +960,9 @@ class DashboardPage extends StatelessWidget {
           child: habitsController != null
               ? Obx(() => StatTile(
                     label: 'Habits',
-                    value: '${habitsController.habits.length}',
+                    value: habitsController.hasLoaded.value
+                        ? '${habitsController.habits.length}'
+                        : '-',
                     sublabel: 'Active habits',
                     icon: Icons.track_changes_outlined,
                     iconColor: AppColors.moduleHabits,

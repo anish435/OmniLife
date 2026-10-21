@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -322,14 +323,14 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
           Row(
             children: [
               Icon(
-                isDemo ? Icons.science_outlined : Icons.auto_awesome,
+                Icons.science_outlined,
                 color: theme.colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  isDemo ? 'Demo Mode Active' : 'Explore with Demo Data',
+                  isDemo ? 'Sample data is loaded' : 'Load sample data',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -337,13 +338,18 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
               ),
               if (isDemo)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.6,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'TESTING MODE',
+                    'Sample',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onPrimaryContainer,
@@ -356,8 +362,8 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
           const SizedBox(height: 6),
           Text(
             isDemo
-                ? 'Sample life events, tasks, habits, and finance transactions are currently loaded. Exit testing mode anytime to clear demo data and restore your normal user data.'
-                : 'Populate sample life events, tasks, habits, and finance transactions to explore full momentum scores, patterns, and insights.',
+                ? 'Sample tasks, habits, spending and daily logs are loaded so you can look around. Remove them any time and your own entries stay as they were.'
+                : 'Add some sample tasks, habits, spending and daily logs to see how momentum and patterns look.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -381,8 +387,9 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
                           SnackBar(
                             content: Text(
                               success
-                                  ? 'Testing mode exited. Returned to normal user data.'
-                                  : 'Failed to clear some demo data.',
+                                  ? 'Sample data removed.'
+                                  : DemoDataSeeder.lastError ??
+                                        'Could not remove all the sample data.',
                             ),
                           ),
                         );
@@ -394,8 +401,9 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
                           SnackBar(
                             content: Text(
                               success
-                                  ? 'Demo data loaded successfully across all modules!'
-                                  : 'Failed to load some demo data.',
+                                  ? 'Sample data loaded.'
+                                  : (DemoDataSeeder.lastError ??
+                                        'Could not load all the sample data.'),
                             ),
                           ),
                         );
@@ -407,16 +415,11 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(
-                      isDemo ? Icons.restore : Icons.download,
-                      size: 16,
-                    ),
+                  : Icon(isDemo ? Icons.restore : Icons.download, size: 16),
               label: Text(
                 _loading
-                    ? (isDemo ? 'Restoring data...' : 'Loading demo data...')
-                    : (isDemo
-                        ? 'Exit Testing Mode (Return to Normal Data)'
-                        : 'Load Demo Data'),
+                    ? (isDemo ? 'Removing...' : 'Loading sample data...')
+                    : (isDemo ? 'Remove sample data' : 'Load sample data'),
               ),
               style: isDemo
                   ? OutlinedButton.styleFrom(
@@ -433,5 +436,3 @@ class _DemoDataInsightsCardState extends State<_DemoDataInsightsCard> {
     );
   }
 }
-
-

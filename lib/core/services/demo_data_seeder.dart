@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/calendar_event.dart';
 import '../../domain/entities/finance_transaction.dart';
@@ -37,58 +36,44 @@ class DemoDataSeeder {
   DemoDataSeeder._();
 
   static const String demoPrefix = 'omni_demo_';
-  static const String _prefKey = 'omnilife_demo_mode_active';
+  static const String _prefKeyBase = 'omnilife_demo_mode_active';
+
+  /// Sample data state is remembered per account, so switching accounts
+  /// shows the right state.
+  static String _prefKeyFor(String uid) => '${_prefKeyBase}_$uid';
 
   static final RxBool isDemoMode = false.obs;
 
+  static const String signInMessage = 'Sign in to load sample data.';
+
+  /// Plain reason the last [seedAll] / [clearDemoData] call did nothing.
+  static String? lastError;
+
+  static String _currentUid() {
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    return auth?.currentUser.value?.uid ?? '';
+  }
+
+  static int _seq = 0;
+
+  /// Stable id part so loading twice rewrites the same documents.
+  static String _sid(String uid) => '${uid}_${_seq++}';
+
+  /// Reloads [isDemoMode] for the signed-in account.
   static Future<void> checkStatus() async {
+    final uid = _currentUid();
+    if (uid.isEmpty) {
+      isDemoMode.value = false;
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getBool(_prefKey);
-      if (saved != null) {
-        isDemoMode.value = saved;
-        return;
-      }
-    } catch (_) {}
-
-    // Fallback: detect if demo entities are present in active controllers
-    try {
-      if (Get.isRegistered<TaskController>()) {
-        final hasDemo = Get.find<TaskController>().tasks.any(
-          (t) => t.id.startsWith(demoPrefix) || _isDemoTaskTitle(t.title),
-        );
-        if (hasDemo) {
-          isDemoMode.value = true;
-          return;
-        }
-      }
-      if (Get.isRegistered<FinanceController>()) {
-        final hasDemo = Get.find<FinanceController>().transactions.any(
-          (tx) => tx.id.startsWith(demoPrefix) || _isDemoFinanceTitle(tx.title),
-        );
-        if (hasDemo) {
-          isDemoMode.value = true;
-          return;
-        }
-      }
-      if (Get.isRegistered<HabitsController>()) {
-        final hasDemo = Get.find<HabitsController>().habits.any(
-          (h) => h.id.startsWith(demoPrefix) || _isDemoHabitTitle(h.title),
-        );
-        if (hasDemo) {
-          isDemoMode.value = true;
-          return;
-        }
-      }
-      if (Get.isRegistered<PulseController>()) {
-        final pc = Get.find<PulseController>();
-        if (pc.insights.value != null && pc.insights.value!.patterns.isNotEmpty) {
-          isDemoMode.value = true;
-          return;
-        }
-      }
-    } catch (_) {}
-    isDemoMode.value = false;
+      isDemoMode.value = prefs.getBool(_prefKeyFor(uid)) ?? false;
+    } catch (_) {
+      isDemoMode.value = false;
+    }
   }
 
   static Future<bool> seedAll() async {
@@ -96,21 +81,32 @@ class DemoDataSeeder {
       final auth = Get.isRegistered<AuthController>()
           ? Get.find<AuthController>()
           : null;
-      final uid = auth?.currentUser.value?.uid ?? 'guest-user';
+      final uid = auth?.currentUser.value?.uid ?? '';
+      if (uid.isEmpty) {
+        lastError = signInMessage;
+        return false;
+      }
+      lastError = null;
+      if (await _savedFlag(uid)) {
+        // Already loaded for this account: nothing to add.
+        isDemoMode.value = true;
+        return true;
+      }
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final uuid = const Uuid();
+      _seq = 0;
 
       // 1. Seed Tasks
       if (Get.isRegistered<TaskRepository>()) {
         final taskRepo = Get.find<TaskRepository>();
         final tasks = [
           Task(
-            id: '${demoPrefix}task_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}task_${_sid(uid)}',
             userId: uid,
-            title: 'Prepare quarterly product roadmap presentation',
-            description: 'Align KPIs with growth milestones and engineering deliverables.',
+            title: 'Plan the week ahead',
+            description:
+                'Sort out work priorities and decide what to cook for dinner.',
             completed: false,
             priority: TaskPriority.high,
             dueDate: today.add(const Duration(hours: 17)),
@@ -118,10 +114,10 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(hours: 4)),
           ),
           Task(
-            id: '${demoPrefix}task_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}task_${_sid(uid)}',
             userId: uid,
-            title: 'Review pull requests and run integration tests',
-            description: 'Check voice agent pipeline and notification scheduling.',
+            title: 'Return the library books',
+            description: 'Due back by this evening.',
             completed: false,
             priority: TaskPriority.medium,
             dueDate: today.add(const Duration(hours: 19)),
@@ -129,10 +125,10 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(hours: 3)),
           ),
           Task(
-            id: '${demoPrefix}task_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}task_${_sid(uid)}',
             userId: uid,
-            title: 'Morning briefing & team sync completed',
-            description: 'Reviewed blocker list and sprint velocity.',
+            title: 'Water the plants',
+            description: 'Did the balcony ones too.',
             completed: true,
             priority: TaskPriority.low,
             dueDate: today.add(const Duration(hours: 10)),
@@ -140,10 +136,10 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(hours: 1)),
           ),
           Task(
-            id: '${demoPrefix}task_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}task_${_sid(uid)}',
             userId: uid,
             title: 'Pick up organic groceries & matcha tea',
-            description: 'Fresh fruits, vegetables, and electrolyte water.',
+            description: 'Fruit, vegetables and milk.',
             completed: false,
             priority: TaskPriority.medium,
             dueDate: today.add(const Duration(days: 1, hours: 14)),
@@ -151,7 +147,7 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(hours: 2)),
           ),
           Task(
-            id: '${demoPrefix}task_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}task_${_sid(uid)}',
             userId: uid,
             title: 'Schedule annual dental checkup',
             description: 'Routine preventive care appointment.',
@@ -177,10 +173,10 @@ class DemoDataSeeder {
         final calRepo = Get.find<CalendarRepository>();
         final events = [
           CalendarEvent(
-            id: '${demoPrefix}event_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}event_${_sid(uid)}',
             userId: uid,
-            title: 'Daily Product Standup',
-            description: 'Fast 15-min sync on blockers and daily goals.',
+            title: 'Morning coffee with Priya',
+            description: 'A quick catch up before work.',
             startAt: today.add(const Duration(hours: 10)),
             endAt: today.add(const Duration(hours: 10, minutes: 30)),
             colorTag: 'blue',
@@ -189,10 +185,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           CalendarEvent(
-            id: '${demoPrefix}event_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}event_${_sid(uid)}',
             userId: uid,
-            title: 'Architecture & AI Review',
-            description: 'Deep dive into local SQLite vs cloud synchronization.',
+            title: 'Lunch with Mom',
+            description: 'Her favourite place near the market.',
             startAt: today.add(const Duration(hours: 14)),
             endAt: today.add(const Duration(hours: 15, minutes: 30)),
             colorTag: 'purple',
@@ -201,10 +197,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           CalendarEvent(
-            id: '${demoPrefix}event_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}event_${_sid(uid)}',
             userId: uid,
-            title: 'Fitness & HIIT Workout',
-            description: 'Cardio and strength training session.',
+            title: 'Evening gym session',
+            description: 'Cardio and some weights.',
             startAt: today.add(const Duration(hours: 18)),
             endAt: today.add(const Duration(hours: 19)),
             colorTag: 'green',
@@ -213,10 +209,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           CalendarEvent(
-            id: '${demoPrefix}event_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}event_${_sid(uid)}',
             userId: uid,
-            title: 'Weekly Strategy Planning',
-            description: 'Roadmap planning for next iteration.',
+            title: 'Weekend trip planning',
+            description: 'Pick the dates and book the train.',
             startAt: today.add(const Duration(days: 1, hours: 11)),
             endAt: today.add(const Duration(days: 1, hours: 12)),
             colorTag: 'orange',
@@ -240,10 +236,10 @@ class DemoDataSeeder {
         final habitRepo = Get.find<HabitRepository>();
         final habits = [
           Habit(
-            id: '${demoPrefix}habit_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}habit_${_sid(uid)}',
             userId: uid,
-            title: 'Morning Mindfulness & Meditation',
-            description: '10 minutes of box breathing and gratitude.',
+            title: 'Morning meditation',
+            description: 'Ten quiet minutes before the day starts.',
             frequency: HabitFrequency.daily,
             targetDaysPerWeek: 7,
             specificDays: const [1, 2, 3, 4, 5, 6, 7],
@@ -254,10 +250,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           Habit(
-            id: '${demoPrefix}habit_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}habit_${_sid(uid)}',
             userId: uid,
-            title: 'Read 20 Pages of Non-Fiction',
-            description: 'Continuous lifelong learning in science & design.',
+            title: 'Read 20 pages',
+            description: 'A little every night before bed.',
             frequency: HabitFrequency.daily,
             targetDaysPerWeek: 7,
             specificDays: const [1, 2, 3, 4, 5, 6, 7],
@@ -268,10 +264,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           Habit(
-            id: '${demoPrefix}habit_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}habit_${_sid(uid)}',
             userId: uid,
-            title: 'Hydration Target: 2.5 Liters',
-            description: 'Track daily water intake throughout workday.',
+            title: 'Drink 2.5 litres of water',
+            description: 'Keep a bottle on the desk.',
             frequency: HabitFrequency.daily,
             targetDaysPerWeek: 7,
             specificDays: const [1, 2, 3, 4, 5, 6, 7],
@@ -282,10 +278,10 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           Habit(
-            id: '${demoPrefix}habit_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}habit_${_sid(uid)}',
             userId: uid,
-            title: 'Evening 5km Jog / Walk',
-            description: 'Active recovery and fresh air.',
+            title: 'Evening walk or jog',
+            description: 'Some fresh air after dinner.',
             frequency: HabitFrequency.weekly,
             targetDaysPerWeek: 4,
             specificDays: const [1, 3, 5, 7],
@@ -319,9 +315,9 @@ class DemoDataSeeder {
         final finRepo = Get.find<FinanceRepository>();
         final txs = [
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Enterprise Consulting Retainer',
+            title: 'Freelance project payment',
             amount: 2500.0,
             category: TransactionCategory.income,
             isIncome: true,
@@ -330,9 +326,9 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Bi-Weekly Tech Salary',
+            title: 'Monthly salary',
             amount: 4200.0,
             category: TransactionCategory.income,
             isIncome: true,
@@ -341,9 +337,9 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(days: 4)),
           ),
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Organic Food Market & Fresh Produce',
+            title: 'Grocery run',
             amount: 86.40,
             category: TransactionCategory.food,
             isIncome: false,
@@ -352,9 +348,9 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Specialty Espresso & Breakfast',
+            title: 'Coffee and breakfast',
             amount: 14.50,
             category: TransactionCategory.food,
             isIncome: false,
@@ -363,9 +359,9 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Fiber Internet & Cloud Services',
+            title: 'Internet bill',
             amount: 85.00,
             category: TransactionCategory.utilities,
             isIncome: false,
@@ -374,9 +370,9 @@ class DemoDataSeeder {
             updatedAt: now.subtract(const Duration(days: 2)),
           ),
           FinanceTransaction(
-            id: '${demoPrefix}tx_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}tx_${_sid(uid)}',
             userId: uid,
-            title: 'Fitness Club & Sauna Access',
+            title: 'Gym membership',
             amount: 60.00,
             category: TransactionCategory.entertainment,
             isIncome: false,
@@ -400,45 +396,48 @@ class DemoDataSeeder {
         final noteRepo = Get.find<NoteRepository>();
         final notes = [
           Note(
-            id: '${demoPrefix}note_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}note_${_sid(uid)}',
             userId: uid,
-            title: 'OmniLife Product Vision & Engineering Roadmap',
-            content: '# OmniLife OS\n\n'
-                'Personal AI-connected life operating system.\n\n'
-                '### Core Tenets\n'
-                '- **Offline First**: Instant response with SQLite & local cache\n'
-                '- **Holistic Life Insights**: Momentum, sleep patterns, and daily habits\n'
-                '- **Voice & Multimodal AI**: Natural action execution across all modules\n\n'
-                '- [x] Complete auth flow\n'
-                '- [x] Voice assistant multi-turn command\n'
-                '- [ ] Real-time cross-device notification sync',
-            category: 'Work',
+            title: 'Plans for the next few months',
+            content:
+                '# Next few months\n\n'
+                'Things I want to get done before the year ends.\n\n'
+                '### Priorities\n'
+                '- **Sleep**: aim for 11pm bedtime on weekdays\n'
+                '- **Move**: walk or gym at least four times a week\n'
+                '- **Money**: set aside a little every month\n\n'
+                '- [x] Renew passport\n'
+                '- [x] Book the dentist\n'
+                '- [ ] Plan a trip with friends',
+            category: 'Personal',
             colorTag: 'blue',
             isPinned: true,
-            tags: const ['Engineering', 'Vision', 'OmniLife'],
+            tags: const ['Goals', 'Planning'],
             createdAt: now.subtract(const Duration(days: 3)),
             updatedAt: now.subtract(const Duration(hours: 1)),
           ),
           Note(
-            id: '${demoPrefix}note_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}note_${_sid(uid)}',
             userId: uid,
-            title: 'Weekly High-Performance Meal Prep',
-            content: 'Nutritious meal combinations for mental clarity:\n\n'
+            title: 'Weekly meal prep ideas',
+            content:
+                'Simple meals for the week:\n\n'
                 '1. Wild salmon with roasted asparagus and quinoa\n'
                 '2. Mediterranean lentil bowl with olive oil & feta\n'
-                '3. Morning antioxidant smoothie: blueberries, spinach, chia',
+                '3. Morning smoothie: blueberries, spinach, chia',
             category: 'Health',
             colorTag: 'green',
             isPinned: false,
-            tags: const ['Nutrition', 'Energy', 'Recipes'],
+            tags: const ['Food', 'Recipes'],
             createdAt: now.subtract(const Duration(days: 2)),
             updatedAt: now.subtract(const Duration(days: 2)),
           ),
           Note(
-            id: '${demoPrefix}note_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}note_${_sid(uid)}',
             userId: uid,
-            title: 'Books & Quotes to Reflect On',
-            content: '> "We are what we repeatedly do. Excellence, then, is not an act, but a habit."\n\n'
+            title: 'Books and quotes to reflect on',
+            content:
+                '> "We are what we repeatedly do. Excellence, then, is not an act, but a habit."\n\n'
                 'Key reads for this quarter:\n'
                 '- Atomic Habits (James Clear)\n'
                 '- Deep Work (Cal Newport)\n'
@@ -497,10 +496,12 @@ class DemoDataSeeder {
           await lifeRepo.record(
             uid,
             LifeEventType.sleepStart,
-            at: dayBase.subtract(Duration(
-              hours: isHighSleepDay ? 1 : 0,
-              minutes: isHighSleepDay ? 30 : 0,
-            )),
+            at: dayBase.subtract(
+              Duration(
+                hours: isHighSleepDay ? 1 : 0,
+                minutes: isHighSleepDay ? 30 : 0,
+              ),
+            ),
             metadata: {
               'isDemo': true,
               'omniDemo': true,
@@ -511,10 +512,9 @@ class DemoDataSeeder {
           await lifeRepo.record(
             uid,
             LifeEventType.wake,
-            at: dayBase.add(Duration(
-              hours: isHighSleepDay ? 7 : 6,
-              minutes: 0,
-            )),
+            at: dayBase.add(
+              Duration(hours: isHighSleepDay ? 7 : 6, minutes: 0),
+            ),
             metadata: {
               'isDemo': true,
               'omniDemo': true,
@@ -553,7 +553,9 @@ class DemoDataSeeder {
               'isDemo': true,
               'omniDemo': true,
               'score': isHighSleepDay ? 5 : 3,
-              'label': isHighSleepDay ? 'Productive and energized' : 'Slight fatigue',
+              'label': isHighSleepDay
+                  ? 'Productive and energized'
+                  : 'Slight fatigue',
             },
           );
           // Workout
@@ -576,7 +578,7 @@ class DemoDataSeeder {
         final remRepo = Get.find<ReminderRepository>();
         final reminders = [
           Reminder(
-            id: '${demoPrefix}rem_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}rem_${_sid(uid)}',
             userId: uid,
             title: 'Take afternoon stretch & hydrate break',
             scheduledAt: now.add(const Duration(minutes: 45)),
@@ -586,17 +588,17 @@ class DemoDataSeeder {
             updatedAt: now,
           ),
           Reminder(
-            id: '${demoPrefix}rem_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}rem_${_sid(uid)}',
             userId: uid,
-            title: 'Daily Evening Life Reflection',
+            title: 'Evening reflection',
             scheduledAt: today.add(const Duration(hours: 21)),
             repeat: ReminderRepeat.daily,
-            note: 'Log gratitude and check tomorrow tasks',
+            note: 'Write down three good things and look at tomorrow',
             createdAt: now,
             updatedAt: now,
           ),
           Reminder(
-            id: '${demoPrefix}rem_${uuid.v4().substring(0, 8)}',
+            id: '${demoPrefix}rem_${_sid(uid)}',
             userId: uid,
             title: 'Morning Vitamin D & Omega-3 supplement',
             scheduledAt: today.add(const Duration(hours: 8)),
@@ -619,7 +621,7 @@ class DemoDataSeeder {
       isDemoMode.value = true;
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_prefKey, true);
+        await prefs.setBool(_prefKeyFor(uid), true);
       } catch (_) {}
 
       _refreshControllers();
@@ -637,7 +639,12 @@ class DemoDataSeeder {
       final auth = Get.isRegistered<AuthController>()
           ? Get.find<AuthController>()
           : null;
-      final uid = auth?.currentUser.value?.uid ?? 'guest-user';
+      final uid = auth?.currentUser.value?.uid ?? '';
+      if (uid.isEmpty) {
+        lastError = signInMessage;
+        return false;
+      }
+      lastError = null;
       final now = DateTime.now();
 
       // 1. Clear Tasks
@@ -735,10 +742,10 @@ class DemoDataSeeder {
             now.add(const Duration(days: 2)),
           );
           for (final ev in events) {
-            final isDemo = ev.id.startsWith(demoPrefix) ||
+            final isDemo =
+                ev.id.startsWith(demoPrefix) ||
                 ev.metadata['omniDemo'] == true ||
-                ev.metadata['isDemo'] == true ||
-                _isDemoLifeEventLabel(ev.label);
+                ev.metadata['isDemo'] == true;
             if (isDemo) {
               await lifeRepo.delete(ev);
             }
@@ -801,7 +808,7 @@ class DemoDataSeeder {
       isDemoMode.value = false;
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool(_prefKey, false);
+        await prefs.setBool(_prefKeyFor(uid), false);
       } catch (_) {}
 
       _refreshControllers();
@@ -809,6 +816,15 @@ class DemoDataSeeder {
       return true;
     } catch (e, stack) {
       debugPrint('Error clearing demo data: $e\n$stack');
+      return false;
+    }
+  }
+
+  static Future<bool> _savedFlag(String uid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefKeyFor(uid)) ?? false;
+    } catch (_) {
       return false;
     }
   }
@@ -854,7 +870,7 @@ class DemoDataSeeder {
       'Pay quarterly tax estimate',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 
   static bool _isDemoEventTitle(String title) {
@@ -869,7 +885,7 @@ class DemoDataSeeder {
       'Weekly Family Dinner & Catchup',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 
   static bool _isDemoHabitTitle(String title) {
@@ -884,7 +900,7 @@ class DemoDataSeeder {
       'Nightly Gratitude & Reflection',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 
   static bool _isDemoFinanceTitle(String title) {
@@ -903,7 +919,7 @@ class DemoDataSeeder {
       'Freelance Design Project',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 
   static bool _isDemoNoteTitle(String title) {
@@ -916,7 +932,7 @@ class DemoDataSeeder {
       'Books to Read in 2026',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 
   static bool _isDemoReminderTitle(String title) {
@@ -926,23 +942,6 @@ class DemoDataSeeder {
       'Morning Vitamin D & Omega-3 supplement',
     ];
     final lower = title.toLowerCase();
-    return titles.any((t) => lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower));
-  }
-
-  static bool _isDemoLifeEventLabel(String? label) {
-    if (label == null) return false;
-    const labels = [
-      'Deep Sleep',
-      'Restless Sleep',
-      'Refreshed Wakeup',
-      'Early Alarm',
-      'Deep Work Sprint',
-      'Quick Task',
-      'Productive and energized',
-      'Slight fatigue',
-      'Cardio & Strength',
-      'Stretching',
-    ];
-    return labels.contains(label);
+    return titles.any((t) => t.toLowerCase() == lower);
   }
 }

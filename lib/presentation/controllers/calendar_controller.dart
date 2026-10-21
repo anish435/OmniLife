@@ -41,6 +41,10 @@ class CalendarController extends GetxController {
 
   final events = <CalendarEvent>[].obs;
   final isLoading = false.obs;
+
+  /// True once the first load has finished, so screens can show a neutral
+  /// placeholder instead of a misleading zero.
+  final hasLoaded = false.obs;
   final errorMessage = RxnString();
 
   String get _currentUserId =>
@@ -91,6 +95,7 @@ class CalendarController extends GetxController {
       errorMessage.value = 'Failed to load calendar: $e';
     } finally {
       isLoading.value = false;
+      hasLoaded.value = true;
     }
   }
 

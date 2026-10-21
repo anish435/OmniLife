@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:omnilife/core/errors/auth_error_messages.dart';
+import 'package:omnilife/core/errors/failures.dart';
 import 'package:omnilife/domain/repositories/auth_repository.dart';
 import 'package:omnilife/presentation/controllers/auth_controller.dart';
 import 'package:omnilife/presentation/pages/auth/login_page.dart';
@@ -50,7 +52,9 @@ void main() {
     expect(find.text('Enter a valid email address'), findsOneWidget);
   });
 
-  testWidgets('renders Continue with Google button and triggers sign in', (tester) async {
+  testWidgets('renders Continue with Google button and triggers sign in', (
+    tester,
+  ) async {
     final fake = FakeAuthRepository();
     await pumpLoginPage(tester, fake);
 
@@ -62,5 +66,50 @@ void main() {
 
     final controller = Get.find<AuthController>();
     expect(controller.status.value, AuthStatus.authenticated);
+  });
+
+  testWidgets('shows an inline error for a short password', (tester) async {
+    await pumpLoginPage(tester, FakeAuthRepository());
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'user@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'abc',
+    );
+    final signInBtn = find.widgetWithText(ElevatedButton, 'Sign In');
+    await tester.ensureVisible(signInBtn);
+    await tester.tap(signInBtn);
+    await tester.pump();
+
+    expect(find.text('Password must be at least 8 characters'), findsOneWidget);
+  });
+
+  testWidgets('wrong credentials show a friendly message', (tester) async {
+    final fake = FakeAuthRepository()
+      ..failureToThrowOnLogin = AuthFailure(
+        friendlyAuthMessage('wrong-password'),
+        code: 'wrong-password',
+      );
+    await pumpLoginPage(tester, fake);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'user@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'password123',
+    );
+    final signInBtn = find.widgetWithText(ElevatedButton, 'Sign In');
+    await tester.ensureVisible(signInBtn);
+    await tester.tap(signInBtn);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Email or password is incorrect.'), findsOneWidget);
+    expect(find.textContaining('firebase'), findsNothing);
   });
 }

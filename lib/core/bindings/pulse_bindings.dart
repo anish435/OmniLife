@@ -8,6 +8,8 @@ import '../../domain/repositories/life_event_repository.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../../domain/focus/focus_event_sink.dart';
 import '../../domain/services/sleep_source.dart';
+import '../../domain/services/water_source.dart';
+import '../../domain/usecases/pulse/pulse_water_source.dart';
 import '../../domain/usecases/pulse/pulse_sleep_source.dart';
 import '../../domain/usecases/pulse/pulse_focus_event_sink.dart';
 import '../../domain/usecases/pulse/pulse_insights_service.dart';
@@ -47,6 +49,13 @@ void registerSyncAndPulse() {
   if (!Get.isRegistered<SleepSource>()) {
     Get.lazyPut<SleepSource>(
       () => PulseSleepSource(Get.find<LifeEventRepository>()),
+      fenix: true,
+    );
+  }
+  // Wellness reads and changes water through Pulse water events.
+  if (!Get.isRegistered<WaterSource>()) {
+    Get.lazyPut<WaterSource>(
+      () => PulseWaterSource(Get.find<LifeEventRepository>()),
       fenix: true,
     );
   }
