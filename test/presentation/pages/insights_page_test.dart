@@ -130,36 +130,45 @@ void main() {
     Get.reset();
   });
 
-  Future<void> pumpInsightsPage(WidgetTester tester, {double width = 375, double height = 812}) async {
+  Future<void> pumpInsightsPage(
+    WidgetTester tester, {
+    double width = 375,
+    double height = 812,
+  }) async {
     tester.view.physicalSize = Size(width, height);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
-      GetMaterialApp(
-        theme: AppTheme.light,
-        home: const InsightsPage(),
-      ),
+      GetMaterialApp(theme: AppTheme.light, home: const InsightsPage()),
     );
     await tester.pumpAndSettle();
   }
 
   group('InsightsPage layout and data presentation', () {
-    testWidgets('renders at 375px phone width with Momentum metrics and empty patterns', (tester) async {
-      await pumpInsightsPage(tester, width: 375);
+    testWidgets(
+      'renders at 375px phone width with Momentum metrics and empty patterns',
+      (tester) async {
+        await pumpInsightsPage(tester, width: 375);
 
-      expect(find.text('Insights'), findsOneWidget);
-      expect(find.text('MOMENTUM'), findsOneWidget);
-      expect(find.text('PATTERNS'), findsOneWidget);
-      expect(find.text('Focus'), findsOneWidget);
-      expect(find.text('Recovery'), findsOneWidget);
-      expect(find.text('Momentum'), findsOneWidget);
-      expect(find.text('Balance'), findsOneWidget);
-      expect(find.textContaining('Log a few moments and complete some tasks'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('Insights'), findsOneWidget);
+        expect(find.text('MOMENTUM'), findsOneWidget);
+        expect(find.text('PATTERNS'), findsOneWidget);
+        expect(find.text('Focus'), findsOneWidget);
+        expect(find.text('Recovery'), findsOneWidget);
+        expect(find.text('Momentum'), findsOneWidget);
+        expect(find.text('Balance'), findsOneWidget);
+        expect(
+          find.textContaining('Log a few moments and complete some tasks'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('renders at 390px and 430px widths without overflow', (tester) async {
+    testWidgets('renders at 390px and 430px widths without overflow', (
+      tester,
+    ) async {
       for (final w in [390.0, 430.0]) {
         await pumpInsightsPage(tester, width: w);
         expect(find.text('Insights'), findsOneWidget);
@@ -167,7 +176,9 @@ void main() {
       }
     });
 
-    testWidgets('tapping Momentum metric opens bottom sheet explanation', (tester) async {
+    testWidgets('tapping Momentum metric opens bottom sheet explanation', (
+      tester,
+    ) async {
       await pumpInsightsPage(tester);
 
       final focusTile = find.text('Focus');
@@ -178,6 +189,36 @@ void main() {
 
       expect(find.textContaining('Focus'), findsWidgets);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Sample data card', () {
+    testWidgets('uses calm wording and keeps the action button key', (
+      tester,
+    ) async {
+      await pumpInsightsPage(tester);
+      final button = find.byKey(const ValueKey('demo_data_action_button'));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      expect(find.text('Load sample data'), findsWidgets);
+      expect(find.textContaining('Demo'), findsNothing);
+      expect(find.textContaining('TESTING'), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome), findsNothing);
+      expect(find.byIcon(Icons.science_outlined), findsOneWidget);
+    });
+
+    testWidgets('signed out says to sign in and loads nothing', (tester) async {
+      await pumpInsightsPage(tester);
+      Get.find<AuthController>().currentUser.value = null;
+      await tester.pump();
+      final button = find.byKey(const ValueKey('demo_data_action_button'));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Sign in to load sample data.'), findsOneWidget);
+      expect(lifeEventRepo.events, isEmpty);
     });
   });
 }
