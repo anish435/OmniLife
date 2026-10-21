@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:omnilife/core/errors/auth_error_messages.dart';
+import 'package:omnilife/core/errors/failures.dart';
 import 'package:omnilife/domain/repositories/auth_repository.dart';
 import 'package:omnilife/presentation/controllers/auth_controller.dart';
 import 'package:omnilife/presentation/pages/auth/register_page.dart';
@@ -56,5 +58,60 @@ void main() {
     expect(find.text('Email is required'), findsOneWidget);
     expect(find.text('Password is required'), findsOneWidget);
     expect(find.text('Confirm password is required'), findsOneWidget);
+  });
+
+  testWidgets('shows an inline error for a short password', (tester) async {
+    await pumpRegisterPage(tester, FakeAuthRepository());
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'user@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'abc',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Confirm password'),
+      'abc',
+    );
+    final signUpBtn = find.widgetWithText(ElevatedButton, 'Sign Up');
+    await tester.ensureVisible(signUpBtn);
+    await tester.tap(signUpBtn);
+    await tester.pump();
+
+    expect(find.text('Password must be at least 8 characters'), findsOneWidget);
+  });
+
+  testWidgets('an existing email shows a friendly message', (tester) async {
+    final fake = FakeAuthRepository()
+      ..failureToThrowOnRegister = AuthFailure(
+        friendlyAuthMessage('email-already-in-use'),
+        code: 'email-already-in-use',
+      );
+    await pumpRegisterPage(tester, fake);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email'),
+      'user@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'password123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Confirm password'),
+      'password123',
+    );
+    final signUpBtn = find.widgetWithText(ElevatedButton, 'Sign Up');
+    await tester.ensureVisible(signUpBtn);
+    await tester.tap(signUpBtn);
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.text('An account with this email already exists. Try signing in.'),
+      findsOneWidget,
+    );
   });
 }
