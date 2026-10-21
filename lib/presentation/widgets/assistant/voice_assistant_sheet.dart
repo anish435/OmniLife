@@ -126,11 +126,13 @@ class _VoiceAssistantSheetState extends State<VoiceAssistantSheet> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.xs),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.6,
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.auto_awesome,
+                      Icons.mic_none,
                       size: 18,
                       color: theme.colorScheme.primary,
                     ),
@@ -226,10 +228,7 @@ class _VoiceAssistantSheetState extends State<VoiceAssistantSheet> {
         children: [
           Icon(Icons.key_off_outlined, size: 40, color: muted),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Assistant not configured',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('Assistant not configured', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Add GROQ_API_KEY to your .env file to enable the Voice Assistant.',
@@ -389,7 +388,9 @@ class _VoiceAssistantSheetState extends State<VoiceAssistantSheet> {
                   vertical: AppSpacing.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: AppRadius.largeRadius,
                 ),
                 child: Text(msg.text, style: theme.textTheme.bodyMedium),

@@ -224,8 +224,8 @@ class DashboardPage extends StatelessWidget {
                                 SnackBar(
                                   content: Text(
                                     success
-                                        ? 'Demo data loaded successfully across all modules!'
-                                        : 'Failed to load some demo data.',
+                                        ? 'Sample data loaded.'
+                                        : (DemoDataSeeder.lastError ?? 'Could not load all the sample data.'),
                                   ),
                                   duration: const Duration(seconds: 3),
                                 ),
@@ -241,13 +241,13 @@ class DashboardPage extends StatelessWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.auto_awesome,
+                                  Icons.science_outlined,
                                   size: 18,
                                   color: AppColors.primary,
                                 ),
                                 const SizedBox(width: 10),
                                 const Text(
-                                  'Load demo data',
+                                  'Load sample data',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
