@@ -47,7 +47,7 @@ void main() {
     );
     Get.put<PulseController>(pulse);
     if (task) {
-      await h.tasks.createTask(title: 'Pay rent', dueDate: DateTime.now());
+      await h.tasks.createTask(title: 'Pay rent', dueDate: clock);
     }
     await pulse.loadDay(clock);
     return NextUpController(

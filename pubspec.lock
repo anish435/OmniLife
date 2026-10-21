@@ -1342,7 +1342,7 @@ packages:
     source: hosted
     version: "2.7.6"
   stack_trace:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: stack_trace
       sha256: "277654b3034d17ac6f9f1cb5595db011b1d5d41e8806866db28e0abaa101c490"
