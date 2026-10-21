@@ -47,18 +47,30 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Environment/secrets — never commit real credentials
+# Environment and secrets: never commit real credentials
 .env
 .env.*
 !.env.example
 *.secrets.json
 android/key.properties
+*.keystore
+*.jks
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 serviceAccountKey.json
 **/*serviceAccountKey*.json
+
+# Firebase local cache only (firebase.json and .firebaserc are tracked)
 .firebase/
-firebase.json
-.firebaserc
-project-plan.md
+firebase-debug.log
+firestore-debug.log
+
+# Local tooling and scratch files
+.claude/worktrees/
+.agents/
+skills-lock.json
+ft*.txt
+docs/presentation/
+tools/out/
+tools/*.log
 implementation_plan_no_ai.md
