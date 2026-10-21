@@ -34,7 +34,7 @@ void registerReminderDependencies() {
     Get.lazyPut<ReminderScheduler>(
       () => kIsWeb
           ? InAppReminderScheduler(onDue: _showInAppAlert)
-          : NotificationReminderScheduler(),
+          : NotificationReminderScheduler(onDue: _showInAppAlert),
       fenix: true,
     );
   }
@@ -43,9 +43,11 @@ void registerReminderDependencies() {
       () => ReminderServiceImpl(
         repository: Get.find<ReminderRepository>(),
         scheduler: Get.find<ReminderScheduler>(),
-        uidProvider: () => Get.isRegistered<AuthController>()
-            ? Get.find<AuthController>().currentUser.value?.uid
-            : null,
+        uidProvider: () {
+          if (!Get.isRegistered<AuthController>()) return 'guest-user';
+          return Get.find<AuthController>().currentUser.value?.uid ??
+              'guest-user';
+        },
       ),
       fenix: true,
     );
@@ -84,7 +86,7 @@ Future<void> restoreReminders(String uid) async {
   }
 }
 
-/// Web has no scheduled notifications: show a banner while the app is open.
+/// Shows an alert while the app is open.
 void _showInAppAlert(Reminder reminder) {
   if (!Get.isRegistered<NotificationService>()) return;
   Get.find<NotificationService>().showInAppNotification(
@@ -98,4 +100,7 @@ void _showInAppAlert(Reminder reminder) {
       timestamp: DateTime.now(),
     ),
   );
+  if (Get.isRegistered<RemindersController>()) {
+    Get.find<RemindersController>().load();
+  }
 }

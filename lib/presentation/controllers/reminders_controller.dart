@@ -36,8 +36,9 @@ class RemindersController extends GetxController {
   String? get uid => _uidProvider != null
       ? _uidProvider()
       : (Get.isRegistered<AuthController>()
-            ? Get.find<AuthController>().currentUser.value?.uid
-            : null);
+            ? (Get.find<AuthController>().currentUser.value?.uid ??
+                'guest-user')
+            : 'guest-user');
 
   @override
   void onInit() {

@@ -1,3 +1,6 @@
+import 'package:get/get.dart';
+
+import '../../core/services/notification_service.dart';
 import '../../domain/assistant/assistant_tool.dart';
 import '../../domain/assistant/reminder_time.dart';
 import '../../domain/assistant/tool_args.dart';
@@ -9,6 +12,7 @@ import '../../domain/insights/logged_fact.dart';
 import '../../domain/entities/reminder.dart';
 import '../../domain/entities/task.dart';
 import '../controllers/pulse_controller.dart';
+import '../controllers/reminders_controller.dart';
 import 'assistant_tool_deps.dart';
 
 const _weekdayNames = [
@@ -107,12 +111,11 @@ class CreateReminderTool extends AssistantTool {
       },
       'note': _str,
     },
-    required: ['title', 'at'],
   );
 
   @override
   Future<ToolOutcome> run(ToolArgs args, ToolContext ctx) async {
-    final title = args.string('title', required: true)!;
+    final title = args.string('title') ?? 'Reminder';
     final service = deps.reminders;
     if (service == null) {
       return ToolOutcome.failed('Reminders aren\'t available yet.');
@@ -137,6 +140,9 @@ class CreateReminderTool extends AssistantTool {
       repeat: resolved.repeat,
       note: args.string('note', maxLength: 300),
     );
+    if (Get.isRegistered<RemindersController>()) {
+      Get.find<RemindersController>().load();
+    }
     final when = describeWhen(resolved.at, ctx.now);
     final clock = clockTime(resolved.at);
     switch (resolved.repeat) {
@@ -144,7 +150,12 @@ class CreateReminderTool extends AssistantTool {
         return ToolOutcome.done(
           label: 'Reminder set: $title, every day at $clock',
           spoken: 'I\'ve set a daily reminder for ${spokenClock(resolved.at)}.',
-          undo: () => service.remove(reminder),
+          undo: () async {
+            await service.remove(reminder);
+            if (Get.isRegistered<RemindersController>()) {
+              Get.find<RemindersController>().load();
+            }
+          },
         );
       case ReminderRepeat.weekly:
         final day = _weekdayNames[resolved.at.weekday - 1];
@@ -152,14 +163,24 @@ class CreateReminderTool extends AssistantTool {
           label: 'Reminder set: $title, every $day at $clock',
           spoken:
               'I\'ve set a weekly reminder for $day at ${spokenClock(resolved.at)}.',
-          undo: () => service.remove(reminder),
+          undo: () async {
+            await service.remove(reminder);
+            if (Get.isRegistered<RemindersController>()) {
+              Get.find<RemindersController>().load();
+            }
+          },
         );
       case ReminderRepeat.none:
         return ToolOutcome.done(
           label: 'Reminder set: $title, $when',
           spoken:
               'I\'ve set a reminder for ${spokenWhen(resolved.at, ctx.now)}.',
-          undo: () => service.remove(reminder),
+          undo: () async {
+            await service.remove(reminder);
+            if (Get.isRegistered<RemindersController>()) {
+              Get.find<RemindersController>().load();
+            }
+          },
         );
     }
   }
@@ -210,13 +231,59 @@ class CreateTaskTool extends AssistantTool {
     if (created == null) {
       return ToolOutcome.failed('I couldn\'t add that task. Please try again.');
     }
+
+    Reminder? linkedReminder;
+    final reminders = deps.reminders;
+    if (due != null) {
+      if (Get.isRegistered<NotificationService>()) {
+        final notifService = Get.find<NotificationService>();
+        await notifService.scheduleReminder(
+          id: created.title.hashCode & 0x7FFFFFFF,
+          title: 'Task Reminder: ${created.title}',
+          body: 'Task is due now',
+          scheduledDate: due.value,
+          payload: 'task:${created.id}',
+          alarmClock: true,
+        );
+      }
+      if (reminders != null) {
+        try {
+          linkedReminder = await reminders.create(
+            title: created.title,
+            at: due.value,
+            repeat: ReminderRepeat.none,
+            note:
+                'Task due ${due.hasTime ? describeWhen(due.value, ctx.now) : dayWord(due.value, ctx.now)}',
+          );
+          if (Get.isRegistered<RemindersController>()) {
+            Get.find<RemindersController>().load();
+          }
+        } catch (_) {}
+      }
+    }
+
     final dueText = due == null
         ? ''
         : ', due ${due.hasTime ? describeWhen(due.value, ctx.now) : dayWord(due.value, ctx.now)}';
     return ToolOutcome.done(
       label: 'Task added: ${created.title}$dueText',
       spoken: 'I\'ve added "${created.title}" to your tasks.',
-      undo: () => tasks.deleteTask(created.id),
+      undo: () async {
+        await tasks.deleteTask(created.id);
+        if (linkedReminder != null && reminders != null) {
+          try {
+            await reminders.remove(linkedReminder);
+            if (Get.isRegistered<RemindersController>()) {
+              Get.find<RemindersController>().load();
+            }
+          } catch (_) {}
+        }
+        if (Get.isRegistered<NotificationService>()) {
+          await Get.find<NotificationService>().cancelReminder(
+            created.title.hashCode & 0x7FFFFFFF,
+          );
+        }
+      },
     );
   }
 }
@@ -408,20 +475,94 @@ class AddTransactionTool extends AssistantTool {
           'other',
         ],
       },
-      'income': {'type': 'boolean'},
+      'income': {
+        'type': 'boolean',
+        'description': 'true for money received/income, false for spent/expense',
+      },
       'date': _iso,
+      'entries': {
+        'type': 'array',
+        'description':
+            'When multiple transactions are given, list each with amount, title, income, category',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'amount': {'type': 'number'},
+            'title': {'type': 'string'},
+            'income': {'type': 'boolean'},
+            'category': {'type': 'string'},
+          },
+          'required': ['amount'],
+        },
+      },
     },
-    required: ['amount', 'title'],
   );
 
   @override
   Future<ToolOutcome> run(ToolArgs args, ToolContext ctx) async {
+    final rawEntries = args.raw['entries'];
+    if (rawEntries is List && rawEntries.isNotEmpty) {
+      final finance = deps.finance;
+      final results = <FinanceTransaction>[];
+      for (final e in rawEntries) {
+        if (e is Map) {
+          final amt = (e['amount'] as num?)?.toDouble();
+          if (amt == null || amt <= 0) continue;
+          final inc = e['income'] == true;
+          final t = (e['title'] as String?) ?? (inc ? 'Income' : 'Expense');
+          final cat = inc
+              ? TransactionCategory.income
+              : TransactionCategory.values.firstWhere(
+                  (c) =>
+                      c != TransactionCategory.income &&
+                      c.name == e['category']?.toString().toLowerCase(),
+                  orElse: () => TransactionCategory.other,
+                );
+          final created = await finance.addTransaction(
+            amount: amt,
+            title: t,
+            category: cat,
+            date: ctx.now,
+            isIncome: inc,
+          );
+          if (created != null) results.add(created);
+        }
+      }
+      if (results.isNotEmpty) {
+        final totalInc = results
+            .where((t) => t.isIncome)
+            .fold<double>(0, (s, t) => s + t.amount);
+        final totalExp = results
+            .where((t) => !t.isIncome)
+            .fold<double>(0, (s, t) => s + t.amount);
+        final parts = <String>[];
+        if (totalInc > 0) parts.add('Income ${formatAmount(totalInc)}');
+        if (totalExp > 0) parts.add('Expense ${formatAmount(totalExp)}');
+        final net = totalInc - totalExp;
+        return ToolOutcome.done(
+          label:
+              'Logged: ${parts.join(', ')} (Net: ${net >= 0 ? '+' : ''}${formatAmount(net)})',
+          spoken: 'I\'ve recorded ${parts.join(' and ')}.',
+          undo: () async {
+            for (final r in results) {
+              await finance.deleteTransaction(r.id);
+            }
+          },
+        );
+      }
+    }
+
     if (!args.has('amount')) throw const ToolFollowUp('How much was it?');
     final amount = args.number('amount', min: 0.01, max: 100000000)!;
     final title = args.string('title') ?? 'Transaction';
-    final income =
-        (args.boolean('income') ?? false) ||
-        _incomeWords.hasMatch(ctx.userText);
+    final bool income;
+    if (args.boolean('income') != null) {
+      income = args.boolean('income')!;
+    } else if (title.isNotEmpty && _incomeWords.hasMatch(title)) {
+      income = true;
+    } else {
+      income = _incomeWords.hasMatch(ctx.userText);
+    }
     final category = income
         ? TransactionCategory.income
         : TransactionCategory.values.firstWhere(

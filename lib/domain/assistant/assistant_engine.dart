@@ -3,6 +3,7 @@
 import '../insights/linked_advisor.dart';
 import 'ai_provider.dart';
 import 'assistant_tool.dart';
+import 'when_format.dart';
 
 /// Everything that came out of one user command.
 class AssistantTurn {
@@ -77,26 +78,50 @@ class AssistantEngine {
         tools: _tools.specs,
       );
     } on AiProviderException catch (e) {
+      final fallbackCalls = _fallbackDeterministicCalls(text, now);
+      if (fallbackCalls.isNotEmpty) {
+        final context = ToolContext(userText: text, now: now);
+        final outcomes = <ToolOutcome>[];
+        for (final call in fallbackCalls) {
+          outcomes.add(await _tools.execute(call, context));
+        }
+        return AssistantTurn(reply: composeReply(outcomes), outcomes: outcomes);
+      }
       return AssistantTurn(reply: e.message, failure: e.kind);
     } catch (_) {
+      final fallbackCalls = _fallbackDeterministicCalls(text, now);
+      if (fallbackCalls.isNotEmpty) {
+        final context = ToolContext(userText: text, now: now);
+        final outcomes = <ToolOutcome>[];
+        for (final call in fallbackCalls) {
+          outcomes.add(await _tools.execute(call, context));
+        }
+        return AssistantTurn(reply: composeReply(outcomes), outcomes: outcomes);
+      }
       return const AssistantTurn(
         reply: 'I couldn\'t reach the assistant just now. Please try again.',
         failure: AiFailureKind.network,
       );
     }
 
-    if (response.toolCalls.isEmpty) {
-      final reply = (response.text ?? '').trim();
-      return AssistantTurn(
-        reply: reply.isEmpty
-            ? 'I\'m not sure what you\'d like me to do. Could you rephrase?'
-            : reply,
-      );
+    var effectiveCalls = response.toolCalls;
+    if (effectiveCalls.isEmpty) {
+      final fallbackCalls = _fallbackDeterministicCalls(text, now);
+      if (fallbackCalls.isNotEmpty) {
+        effectiveCalls = fallbackCalls;
+      } else {
+        final reply = (response.text ?? '').trim();
+        return AssistantTurn(
+          reply: reply.isEmpty
+              ? 'I\'m not sure what you\'d like me to do. Could you rephrase?'
+              : reply,
+        );
+      }
     }
 
     final context = ToolContext(userText: text, now: now);
     final outcomes = <ToolOutcome>[];
-    for (final call in expandEntries(response.toolCalls).take(maxToolCalls)) {
+    for (final call in expandEntries(effectiveCalls, text).take(maxToolCalls)) {
       outcomes.add(await _tools.execute(call, context));
     }
     var reply = composeReply(outcomes);
@@ -105,14 +130,62 @@ class AssistantEngine {
     return AssistantTurn(reply: reply, outcomes: outcomes);
   }
 
-  /// The model lists several logged facts as `entries` in one logPulse call
-  /// (it will not make parallel calls reliably). Split them so each fact is
-  /// validated, executed and undone on its own.
-  static List<AiToolCall> expandEntries(List<AiToolCall> calls) {
+  static List<AiToolCall> _fallbackDeterministicCalls(String text, DateTime now) {
+    final calls = <AiToolCall>[];
+    final incMatch = _incomeRegex.firstMatch(text);
+    final expMatch = _expenseRegex.firstMatch(text);
+    if (incMatch != null || expMatch != null) {
+      if (incMatch != null) {
+        final incStr = (incMatch.group(1) ?? incMatch.group(2) ?? '').replaceAll(',', '');
+        final incAmt = double.tryParse(incStr);
+        if (incAmt != null && incAmt > 0) {
+          calls.add(AiToolCall(
+            id: 'fallback_inc_${now.millisecondsSinceEpoch}',
+            name: 'addTransaction',
+            arguments: {
+              'amount': incAmt,
+              'income': true,
+              'title': 'Received',
+            },
+          ));
+        }
+      }
+      if (expMatch != null) {
+        final expStr = (expMatch.group(1) ?? expMatch.group(2) ?? '').replaceAll(',', '');
+        final expAmt = double.tryParse(expStr);
+        if (expAmt != null && expAmt > 0) {
+          calls.add(AiToolCall(
+            id: 'fallback_exp_${now.millisecondsSinceEpoch}',
+            name: 'addTransaction',
+            arguments: {
+              'amount': expAmt,
+              'income': false,
+              'title': 'Spent',
+            },
+          ));
+        }
+      }
+    }
+    return calls;
+  }
+
+  static final _incomeRegex = RegExp(
+    r'\b(?:received|recieved|earned|got|salary|income|refund(?:ed)?)\s+(?:(?:from|about)\s+)?(?:rs\.?|inr|\$|€|£)?\s*([0-9]+(?:\.[0-9]+)?)\b|\b(?:rs\.?|inr|\$|€|£)?\s*([0-9]+(?:\.[0-9]+)?)\s+(?:received|recieved|earned|got|as\s+income|salary)\b',
+    caseSensitive: false,
+  );
+  static final _expenseRegex = RegExp(
+    r'\b(?:spent|paid|expense|bought|cost|expended)\s+(?:(?:for|on|about)\s+)?(?:rs\.?|inr|\$|€|£)?\s*([0-9]+(?:\.[0-9]+)?)\b|\b(?:rs\.?|inr|\$|€|£)?\s*([0-9]+(?:\.[0-9]+)?)\s+(?:spent|paid|expense|as\s+expense)\b',
+    caseSensitive: false,
+  );
+
+  /// Splits `entries` in logPulse/addTransaction calls so each item
+  /// is validated, executed and undone on its own. Also ensures multi-amount
+  /// financial statements (e.g. "received X and spent Y") execute both actions.
+  static List<AiToolCall> expandEntries(List<AiToolCall> calls, [String? userText]) {
     final out = <AiToolCall>[];
     for (final c in calls) {
       final entries = c.arguments['entries'];
-      if (c.name == 'logPulse' && entries is List) {
+      if (entries is List && (c.name == 'logPulse' || c.name == 'addTransaction')) {
         var i = 0;
         for (final e in entries) {
           if (e is Map) {
@@ -129,6 +202,51 @@ class AssistantEngine {
         out.add(c);
       }
     }
+
+    if (userText != null && out.any((c) => c.name == 'addTransaction')) {
+      final txCalls = out.where((c) => c.name == 'addTransaction').toList();
+      final incMatch = _incomeRegex.firstMatch(userText);
+      final expMatch = _expenseRegex.firstMatch(userText);
+      if (incMatch != null && expMatch != null) {
+        final incStr = (incMatch.group(1) ?? incMatch.group(2) ?? '').replaceAll(',', '');
+        final expStr = (expMatch.group(1) ?? expMatch.group(2) ?? '').replaceAll(',', '');
+        final incAmt = double.tryParse(incStr);
+        final expAmt = double.tryParse(expStr);
+
+        final hasInc = txCalls.any((c) =>
+            c.arguments['income'] == true ||
+            c.arguments['income'] == 'true' ||
+            double.tryParse('${c.arguments['amount']}'.replaceAll(',', '')) == incAmt);
+        final hasExp = txCalls.any((c) =>
+            c.arguments['income'] == false ||
+            c.arguments['income'] == 'false' ||
+            double.tryParse('${c.arguments['amount']}'.replaceAll(',', '')) == expAmt);
+
+        if (incAmt != null && !hasInc) {
+          out.insert(0, AiToolCall(
+            id: 'extra_inc_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'addTransaction',
+            arguments: {
+              'amount': incAmt,
+              'income': true,
+              'title': 'Received',
+            },
+          ));
+        }
+        if (expAmt != null && !hasExp) {
+          out.add(AiToolCall(
+            id: 'extra_exp_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'addTransaction',
+            arguments: {
+              'amount': expAmt,
+              'income': false,
+              'title': 'Spent',
+            },
+          ));
+        }
+      }
+    }
+
     return out;
   }
 
@@ -165,6 +283,30 @@ class AssistantEngine {
     for (final o in rest) {
       parts.add(o.spoken);
     }
+
+    final incomeTx = done.where((o) => o.label?.startsWith('Income added:') ?? false);
+    final expenseTx = done.where((o) => o.label?.startsWith('Expense added:') ?? false);
+    if (incomeTx.isNotEmpty && expenseTx.isNotEmpty) {
+      double totalIncome = 0;
+      double totalExpense = 0;
+      for (final o in incomeTx) {
+        final m = RegExp(r'Income added:\s*([0-9,]+(?:\.[0-9]+)?)').firstMatch(o.label ?? '');
+        if (m != null) {
+          totalIncome += double.tryParse(m.group(1)!.replaceAll(',', '')) ?? 0;
+        }
+      }
+      for (final o in expenseTx) {
+        final m = RegExp(r'Expense added:\s*([0-9,]+(?:\.[0-9]+)?)').firstMatch(o.label ?? '');
+        if (m != null) {
+          totalExpense += double.tryParse(m.group(1)!.replaceAll(',', '')) ?? 0;
+        }
+      }
+      final net = totalIncome - totalExpense;
+      final sign = net >= 0 ? '+' : '-';
+      final netStr = formatAmount(net.abs());
+      parts.add('Net: $sign$netStr.');
+    }
+
     return parts.join(' ');
   }
 
@@ -203,7 +345,8 @@ class AssistantEngine {
       ..writeln(
         'Reminders: tonight 21:00, morning 08:00, afternoon 14:00, evening '
         '18:00. daily/every day => repeat daily; weekly/every <weekday> => '
-        'weekly; else none. Money is an expense unless received/earned/salary. '
+        'weekly; else none. When asked to set a reminder/remainder or add a task with a time or due date, call createReminder (or createTask with due). '
+        'Multi-command requests: When a user gives multiple instructions or multiple actions in one sentence (for example: "I received 2500 and spent 500", or "add a task and set a reminder"), you MUST call the appropriate tool for EACH action. For money received/income call addTransaction with income: true, and for money spent/expense call addTransaction with income: false. You may either make multiple parallel tool calls or use the entries array. '
         'If key details are missing, ask one short question instead of guessing. '
         'Several facts in one message (sleep, water, meal, workout, mood...): '
         'call logPulse once with every fact listed in entries. Convert '

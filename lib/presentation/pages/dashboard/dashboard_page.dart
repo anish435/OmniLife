@@ -28,6 +28,7 @@ import '../../widgets/progress_ring.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/stat_tile.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/demo_data_seeder.dart';
 import '../../widgets/notifications/notification_sheet.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -213,14 +214,49 @@ class DashboardPage extends StatelessWidget {
                           borderRadius: AppRadius.cardRadius,
                           side: BorderSide(color: hairline, width: 1),
                         ),
-                        onSelected: (action) {
+                        onSelected: (action) async {
                           if (action == 'theme') {
                             appController.toggleTheme();
+                          } else if (action == 'demo_data') {
+                            final success = await DemoDataSeeder.seedAll();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success
+                                        ? 'Demo data loaded successfully across all modules!'
+                                        : 'Failed to load some demo data.',
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
                           } else if (action == 'logout') {
                             authController.logout();
                           }
                         },
                         itemBuilder: (ctx) => [
+                          PopupMenuItem(
+                            value: 'demo_data',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'Load demo data',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(height: 1),
                           PopupMenuItem(
                             value: 'theme',
                             child: Row(
@@ -639,7 +675,6 @@ class DashboardPage extends StatelessWidget {
 
           return Material(
             color: theme.colorScheme.surface,
-            borderRadius: AppRadius.cardRadius,
             shape: RoundedRectangleBorder(
               borderRadius: AppRadius.cardRadius,
               side: BorderSide(color: hairline, width: 1),

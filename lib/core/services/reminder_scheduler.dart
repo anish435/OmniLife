@@ -10,16 +10,22 @@ import 'notification_service.dart';
 
 export '../../domain/services/reminder_scheduler.dart';
 
-/// Phones and desktops: a local system notification at the right time.
+/// Phones and desktops: a local system notification at the right time, plus
+/// foreground in-app alert when the app is active.
 class NotificationReminderScheduler implements ReminderScheduler {
   NotificationReminderScheduler({
     NotificationService Function()? notifications,
     DateTime Function()? now,
+    void Function(Reminder reminder)? onDue,
   }) : _notifications = notifications ?? (() => NotificationService.to),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _inApp = onDue != null
+           ? InAppReminderScheduler(onDue: onDue, now: now)
+           : null;
 
   final NotificationService Function() _notifications;
   final DateTime Function() _now;
+  final InAppReminderScheduler? _inApp;
 
   @override
   Future<void> schedule(Reminder reminder) async {
@@ -28,6 +34,9 @@ class NotificationReminderScheduler implements ReminderScheduler {
     if (next == null) {
       await cancel(reminder.id);
       return;
+    }
+    if (_inApp != null) {
+      await _inApp.schedule(reminder);
     }
     await _notifications().scheduleReminderNotification(
       id: id,
@@ -45,8 +54,12 @@ class NotificationReminderScheduler implements ReminderScheduler {
   }
 
   @override
-  Future<void> cancel(String reminderId) =>
-      _notifications().cancelReminder(reminderNotificationId(reminderId));
+  Future<void> cancel(String reminderId) async {
+    if (_inApp != null) {
+      await _inApp.cancel(reminderId);
+    }
+    await _notifications().cancelReminder(reminderNotificationId(reminderId));
+  }
 }
 
 /// Web: scheduled notifications are not available, so while the app is open

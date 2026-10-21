@@ -66,7 +66,8 @@ class FinanceController extends GetxController {
 
   final isExporting = false.obs;
 
-  String get _currentUserId => _authController.currentUser.value?.uid ?? '';
+  String get _currentUserId =>
+      _authController.currentUser.value?.uid ?? 'guest-user';
 
   double get totalIncome {
     return transactions

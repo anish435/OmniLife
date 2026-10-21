@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -47,6 +48,7 @@ Future<void> notificationBackgroundHandler(
         body: 'Snoozed for ${NotificationActionIds.snoozeMinutes} minutes',
         scheduledDate: when,
         payload: payload,
+        alarmClock: true,
         markDone:
             NotificationRouting.fromPayload(payload)?.kind ==
             NotificationRouting.kindTask,
@@ -77,6 +79,9 @@ NotificationDetails buildReminderDetails({
       icon: '@mipmap/ic_launcher',
       playSound: true,
       enableVibration: true,
+      category: AndroidNotificationCategory.alarm,
+      fullScreenIntent: true,
+      visibility: NotificationVisibility.public,
       actions: withActions
           ? [
               if (markDone)
@@ -259,6 +264,9 @@ class NotificationService extends GetxService {
           );
           await androidPlugin.createNotificationChannel(channel);
         }
+
+        // Request local notification and alarm permissions on startup so reminders fire
+        await requestLocalPermission();
       }
 
       isInitialized.value = true;
@@ -272,8 +280,8 @@ class NotificationService extends GetxService {
   }
 
   /// Asks the OS for permission to show local notifications (Android 13+
-  /// POST_NOTIFICATIONS, iOS alert/badge/sound). Call only in response to the
-  /// user turning notifications on. Returns whether it is granted.
+  /// POST_NOTIFICATIONS, iOS alert/badge/sound) and exact alarms.
+  /// Returns whether notification permission is granted.
   Future<bool> requestLocalPermission() async {
     if (kIsWeb || _isTest) return false;
     try {
@@ -282,7 +290,11 @@ class NotificationService extends GetxService {
             AndroidFlutterLocalNotificationsPlugin
           >();
       if (android != null) {
-        return await android.requestNotificationsPermission() ?? false;
+        final notif = await android.requestNotificationsPermission();
+        try {
+          await android.requestExactAlarmsPermission();
+        } catch (_) {}
+        return notif ?? false;
       }
       final ios = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -447,10 +459,32 @@ class NotificationService extends GetxService {
     required String body,
     required DateTime scheduledDate,
     String? payload,
-    bool alarmClock = false,
+    bool alarmClock = true,
     bool withActions = true,
   }) async {
-    if (scheduledDate.isBefore(DateTime.now())) return;
+    final now = DateTime.now();
+    if (scheduledDate.isBefore(now)) {
+      if (now.difference(scheduledDate).inMinutes < 2) {
+        await _showNativeNotification(
+          id: id,
+          title: title,
+          body: body,
+          payload: normalizePayload(payload),
+          withActions: withActions && _hasActions(payload),
+        );
+        showInAppNotification(
+          AppNotification(
+            id: 'notif_${now.millisecondsSinceEpoch}',
+            title: title,
+            body: body,
+            type: NotificationType.taskReminder,
+            timestamp: now,
+            payload: payload,
+          ),
+        );
+      }
+      return;
+    }
     if (kIsWeb || _isTest) return;
 
     try {
@@ -485,6 +519,31 @@ class NotificationService extends GetxService {
     if (kIsWeb || _isTest) return;
     try {
       _alignLocalTimeZone();
+      final now = DateTime.now();
+      if (when.isBefore(now)) {
+        if (repeat == ReminderRepeat.none && now.difference(when).inMinutes < 2) {
+          await _showNativeNotification(
+            id: id,
+            title: title,
+            body: body,
+            payload: payload,
+            withActions: false,
+          );
+          showInAppNotification(
+            AppNotification(
+              id: 'reminder_${id}_${now.millisecondsSinceEpoch}',
+              title: title,
+              body: body,
+              type: NotificationType.taskReminder,
+              timestamp: now,
+              payload: payload,
+            ),
+          );
+          return;
+        } else if (repeat == ReminderRepeat.none) {
+          return;
+        }
+      }
       await scheduleReminderWithPlugin(
         _notificationsPlugin,
         id: id,
@@ -492,6 +551,7 @@ class NotificationService extends GetxService {
         body: body,
         scheduledDate: when,
         payload: payload,
+        alarmClock: true,
         withActions: false,
         markDone: false,
         matchDateTimeComponents: switch (repeat) {
@@ -592,6 +652,11 @@ class NotificationService extends GetxService {
   /// Shows an anti-slop, clean in-app banner for visible feedback in demo mode.
   void showInAppNotification(AppNotification item) {
     if (_isTest || Get.context == null) return;
+
+    try {
+      SystemSound.play(SystemSoundType.alert);
+      HapticFeedback.heavyImpact();
+    } catch (_) {}
 
     final isBooking =
         item.type == NotificationType.bookingConfirmed ||

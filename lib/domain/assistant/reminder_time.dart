@@ -74,15 +74,31 @@ class ReminderTimeResolver {
         ? DateTime(at.value.year, at.value.month, at.value.day)
         : today;
 
-    int hour;
-    int minute;
+    int? hour;
+    int? minute;
     if (part != null && !explicit) {
       hour = part;
       minute = 0;
     } else if (at != null && at.hasTime) {
       hour = at.value.hour;
       minute = at.value.minute;
-    } else {
+    } else if (explicit) {
+      final matches = RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b', caseSensitive: false).allMatches(said);
+      for (final m in matches) {
+        final h = int.tryParse(m.group(1) ?? '');
+        if (h != null && h >= 1 && h <= 24) {
+          final min = int.tryParse(m.group(2) ?? '0') ?? 0;
+          final ampm = m.group(3)?.toLowerCase();
+          var finalH = h;
+          if (ampm == 'pm' && finalH < 12) finalH += 12;
+          if (ampm == 'am' && finalH == 12) finalH = 0;
+          hour = finalH;
+          minute = min;
+          break;
+        }
+      }
+    }
+    if (hour == null || minute == null) {
       throw const ToolFollowUp('What time should I set that for?');
     }
 
@@ -110,6 +126,12 @@ class ReminderTimeResolver {
           candidate.month == today.month &&
           candidate.day == today.day;
       if (onToday) {
+        // If the user specified a time that is within the current minute or within
+        // the last 2 minutes, treat it as due now/today rather than moving to tomorrow!
+        if (repeat == ReminderRepeat.none &&
+            now.difference(candidate) <= const Duration(minutes: 2)) {
+          return ResolvedReminder(candidate, repeat);
+        }
         final days = (repeat == ReminderRepeat.weekly && at?.hasDate == true)
             ? 7
             : 1;

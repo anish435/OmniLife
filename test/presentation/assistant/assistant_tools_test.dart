@@ -151,6 +151,41 @@ void main() {
       expect(t.category, TransactionCategory.income);
     });
 
+    test('multi-command: received 2500 and spent 500 records both and reports net', () async {
+      final h = await harness(
+        (_) => calls([
+          call('addTransaction', {'amount': 2500, 'title': 'Received', 'income': true}),
+          call('addTransaction', {'amount': 500, 'title': 'Spent', 'income': false}),
+        ]),
+      );
+      final turn = await h.engine.handle('I received 2500 and spent 500');
+      expect(h.financeRepo.store, hasLength(2));
+      final items = h.financeRepo.store.values.toList();
+      final inc = items.firstWhere((t) => t.isIncome);
+      final exp = items.firstWhere((t) => !t.isIncome);
+      expect(inc.amount, 2500);
+      expect(exp.amount, 500);
+      expect(turn.reply, contains('2,500 as income'));
+      expect(turn.reply, contains('500 expense'));
+      expect(turn.reply, contains('Net: +2,000'));
+    });
+
+    test('multi-command auto-completes missing side if model only called one', () async {
+      final h = await harness(
+        (_) => calls([
+          call('addTransaction', {'amount': 2500, 'title': 'Received', 'income': true}),
+        ]),
+      );
+      final turn = await h.engine.handle('i recieved 2500 and spent 500');
+      expect(h.financeRepo.store, hasLength(2));
+      final items = h.financeRepo.store.values.toList();
+      final inc = items.firstWhere((t) => t.isIncome);
+      final exp = items.firstWhere((t) => !t.isIncome);
+      expect(inc.amount, 2500);
+      expect(exp.amount, 500);
+      expect(turn.reply, contains('Net: +2,000'));
+    });
+
     test('invalid amounts never reach the repository', () async {
       for (final bad in ['abc', -5, 0, 1e12]) {
         final h = await harness(
