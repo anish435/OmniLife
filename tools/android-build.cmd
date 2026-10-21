@@ -1,5 +1,5 @@
 @echo off
-REM Usage: tools\android-build.cmd [debug] [release]
+REM Usage: toolsndroid-build.cmd [debug] [release] [aab]
 REM Runs the WSL build script (see docs\android-build-wsl.md).
 set "SCRIPT=%~dp0android-build-wsl.sh"
 set "MSYS_NO_PATHCONV=1"

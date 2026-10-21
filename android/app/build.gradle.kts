@@ -47,30 +47,25 @@ android {
 
     signingConfigs {
         create("release") {
-            val keyFileName = keystoreProperties.getProperty("storeFile") ?: "omnilife.keystore"
-            val resolvedFile = if (file(keyFileName).exists()) {
-                file(keyFileName)
-            } else if (rootProject.file(keyFileName).exists()) {
-                rootProject.file(keyFileName)
-            } else {
-                null
+            // Release signing comes only from android/key.properties (never
+            // committed). Without it the release build falls back to the debug
+            // key so teammates can still build locally.
+            val keyFileName = keystoreProperties.getProperty("storeFile")
+            val resolvedFile = keyFileName?.let {
+                if (file(it).exists()) file(it) else rootProject.file(it).takeIf { f -> f.exists() }
             }
 
-            if (resolvedFile != null && resolvedFile.exists()) {
+            if (resolvedFile != null) {
                 storeFile = resolvedFile
-                storePassword = keystoreProperties.getProperty("storePassword") ?: "omnilife2026"
-                keyAlias = keystoreProperties.getProperty("keyAlias") ?: "omnilife"
-                keyPassword = keystoreProperties.getProperty("keyPassword") ?: "omnilife2026"
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
             }
         }
     }
 
     buildTypes {
         release {
-            val releaseConfig = signingConfigs.findByName("release")
-            signingConfig = if (releaseConfig?.storeFile != null) releaseConfig else signingConfigs.getByName("debug")
-        }
-        debug {
             val releaseConfig = signingConfigs.findByName("release")
             signingConfig = if (releaseConfig?.storeFile != null) releaseConfig else signingConfigs.getByName("debug")
         }

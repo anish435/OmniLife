@@ -13,7 +13,7 @@ export GRADLE_OPTS="-Djava.net.preferIPv4Stack=true -Dorg.gradle.daemon=false"
 export PUB_CACHE=/root/.pub-cache
 export PATH=/opt/flutter/bin:$JAVA_HOME/bin:$SDK/platform-tools:$PATH
 export CI=true
-MODES=("$@"); [ ${#MODES[@]} -eq 0 ] && MODES=(debug release)
+MODES=("$@"); [ ${#MODES[@]} -eq 0 ] && MODES=(release aab)
 
 mkdir -p "$WORK"
 rsync -a --delete \
@@ -31,8 +31,17 @@ EOP
 cd "$WORK"
 flutter pub get
 OUT="$SRC/build/app/outputs/flutter-apk"; mkdir -p "$OUT"
+DEFINES=()
+[ -f "$WORK/.env" ] && DEFINES=(--dart-define-from-file=.env)
 for m in "${MODES[@]}"; do
-  flutter build apk --$m
-  cp -v "$WORK/build/app/outputs/flutter-apk/app-$m.apk" "$OUT/"
+  if [ "$m" = "aab" ]; then
+    flutter build appbundle --release "${DEFINES[@]}"
+    BUNDLE="$SRC/build/app/outputs/bundle/release"; mkdir -p "$BUNDLE"
+    cp -v "$WORK/build/app/outputs/bundle/release/app-release.aab" "$BUNDLE/"
+    ls -lh "$BUNDLE"
+  else
+    flutter build apk --$m "${DEFINES[@]}"
+    cp -v "$WORK/build/app/outputs/flutter-apk/app-$m.apk" "$OUT/"
+  fi
 done
 ls -lh "$OUT"
