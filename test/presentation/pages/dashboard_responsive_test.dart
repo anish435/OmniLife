@@ -16,11 +16,16 @@ import 'package:omnilife/presentation/controllers/calendar_controller.dart';
 import 'package:omnilife/presentation/controllers/pulse_controller.dart';
 import 'package:omnilife/presentation/controllers/sync_controller.dart';
 import 'package:omnilife/presentation/controllers/task_controller.dart';
+import 'package:omnilife/domain/entities/task.dart';
 import 'package:omnilife/presentation/pages/dashboard/dashboard_page.dart';
+import 'package:omnilife/presentation/widgets/assistant/assistant_mic_button.dart';
+import 'package:omnilife/presentation/widgets/sample_data_prompt.dart';
 
 import '../../support/fake_habit_repositories.dart';
-import '../controllers/calendar_controller_test.dart' show FakeCalendarRepository;
-import '../controllers/task_controller_test.dart' show FakeAuthRepository, FakeTaskRepository;
+import '../controllers/calendar_controller_test.dart'
+    show FakeCalendarRepository;
+import '../controllers/task_controller_test.dart'
+    show FakeAuthRepository, FakeTaskRepository;
 
 class _TestLifeEventRepo implements LifeEventRepository {
   final events = <String, LifeEvent>{};
@@ -28,25 +33,42 @@ class _TestLifeEventRepo implements LifeEventRepository {
   @override
   Stream<void> get changes => const Stream.empty();
   @override
-  Future<LifeEvent> record(String uid, LifeEventType type, {DateTime? at, Map<String, dynamic> metadata = const {}}) async {
+  Future<LifeEvent> record(
+    String uid,
+    LifeEventType type, {
+    DateTime? at,
+    Map<String, dynamic> metadata = const {},
+  }) async {
     final now = DateTime.now();
-    final e = LifeEvent(id: 'e1', uid: uid, type: type, timestamp: at ?? now, createdAt: now, updatedAt: now, metadata: metadata);
+    final e = LifeEvent(
+      id: 'e1',
+      uid: uid,
+      type: type,
+      timestamp: at ?? now,
+      createdAt: now,
+      updatedAt: now,
+      metadata: metadata,
+    );
     events[e.id] = e;
     return e;
   }
+
   @override
   Future<LifeEvent> update(LifeEvent event) async => event;
   @override
   Future<void> delete(LifeEvent event) async => events.remove(event.id);
   @override
-  Future<List<LifeEvent>> range(String uid, DateTime from, DateTime to) async => events.values.toList();
+  Future<List<LifeEvent>> range(String uid, DateTime from, DateTime to) async =>
+      events.values.toList();
   @override
   Future<void> refreshFromRemote(String uid, {int days = 90}) async {}
 }
 
 class FakeSyncController extends GetxController implements SyncController {
   FakeSyncController([SyncStatus status = SyncStatus.synced, int pending = 0])
-      : snapshot = Rx<SyncSnapshot>(SyncSnapshot(status: status, pendingCount: pending));
+    : snapshot = Rx<SyncSnapshot>(
+        SyncSnapshot(status: status, pendingCount: pending),
+      );
 
   @override
   final Rx<SyncSnapshot> snapshot;
@@ -59,7 +81,11 @@ class FakeSyncController extends GetxController implements SyncController {
 }
 
 void main() {
-  const user = AppUser(uid: 'u1', email: 'test@example.com', displayName: 'Jane Doe');
+  const user = AppUser(
+    uid: 'u1',
+    email: 'test@example.com',
+    displayName: 'Jane Doe',
+  );
 
   setUp(() {
     Get.testMode = true;
@@ -75,13 +101,19 @@ void main() {
     Get.put<AuthController>(authController);
 
     final taskRepo = FakeTaskRepository();
-    final taskController = TaskController(taskRepository: taskRepo, authController: authController);
+    final taskController = TaskController(
+      taskRepository: taskRepo,
+      authController: authController,
+    );
     taskController.onInit();
     Get.put<TaskRepository>(taskRepo);
     Get.put<TaskController>(taskController);
 
     final calRepo = FakeCalendarRepository();
-    final calController = CalendarController(calendarRepository: calRepo, authController: authController);
+    final calController = CalendarController(
+      calendarRepository: calRepo,
+      authController: authController,
+    );
     calController.onInit();
     Get.put<CalendarRepository>(calRepo);
     Get.put<CalendarController>(calController);
@@ -109,22 +141,25 @@ void main() {
     Get.reset();
   });
 
-  Future<void> pumpDashboard(WidgetTester tester, {double width = 375, double height = 812}) async {
+  Future<void> pumpDashboard(
+    WidgetTester tester, {
+    double width = 375,
+    double height = 812,
+  }) async {
     tester.view.physicalSize = Size(width, height);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
-      GetMaterialApp(
-        theme: AppTheme.light,
-        home: const DashboardPage(),
-      ),
+      GetMaterialApp(theme: AppTheme.light, home: const DashboardPage()),
     );
     await tester.pumpAndSettle();
   }
 
   group('DashboardPage responsive phone rendering', () {
-    testWidgets('renders cleanly at 375px phone width without any overflow', (tester) async {
+    testWidgets('renders cleanly at 375px phone width without any overflow', (
+      tester,
+    ) async {
       await pumpDashboard(tester, width: 375);
 
       expect(find.textContaining('Good'), findsOneWidget);
@@ -148,7 +183,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders cleanly at 390px width without overflow', (tester) async {
+    testWidgets('renders cleanly at 390px width without overflow', (
+      tester,
+    ) async {
       await pumpDashboard(tester, width: 390);
       await tester.scrollUntilVisible(
         find.text('MODULES'),
@@ -159,7 +196,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders cleanly at 430px width without overflow', (tester) async {
+    testWidgets('renders cleanly at 430px width without overflow', (
+      tester,
+    ) async {
       await pumpDashboard(tester, width: 430);
       await tester.scrollUntilVisible(
         find.text('MODULES'),
@@ -170,23 +209,97 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Pulse quick-log strip displays on dashboard and allows one-tap water log', (tester) async {
-      await pumpDashboard(tester, width: 375);
+    testWidgets(
+      'Pulse quick-log strip displays on dashboard and allows one-tap water log',
+      (tester) async {
+        await pumpDashboard(tester, width: 375);
 
-      final waterBtn = find.widgetWithText(OutlinedButton, 'Water');
+        final waterBtn = find.widgetWithText(OutlinedButton, 'Water');
+        await tester.scrollUntilVisible(
+          waterBtn,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(waterBtn, findsOneWidget);
+
+        await tester.tap(waterBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Water logged · 250 ml'), findsOneWidget);
+        expect(find.text('Undo'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('DashboardPage layout and first load', () {
+    testWidgets(
+      'no overflow and mic strip stays clear of content at all widths',
+      (tester) async {
+        for (final w in [375.0, 390.0, 430.0, 768.0, 1024.0, 1280.0]) {
+          await pumpDashboard(tester, width: w, height: w >= 768 ? 900 : 812);
+          final mic = tester.getRect(find.byType(AssistantMicFab));
+          final list = tester.getRect(find.byType(ListView).first);
+          expect(
+            mic.top,
+            greaterThanOrEqualTo(list.bottom - 0.5),
+            reason: 'width $w',
+          );
+          expect(find.byType(FloatingActionButton), findsOneWidget);
+          final ex = tester.takeException();
+          expect(ex, isNull, reason: 'width $w');
+        }
+      },
+    );
+
+    testWidgets('module counts show a dash until the first load finishes', (
+      tester,
+    ) async {
+      Get.find<TaskController>().hasLoaded.value = false;
+      await pumpDashboard(tester, width: 375);
       await tester.scrollUntilVisible(
-        waterBtn,
-        200,
+        find.text('MODULES'),
+        300,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(waterBtn, findsOneWidget);
+      expect(find.text('-'), findsWidgets);
+      expect(find.text('0 items'), findsNothing);
 
-      await tester.tap(waterBtn);
-      await tester.pumpAndSettle();
+      Get.find<TaskController>().hasLoaded.value = true;
+      await tester.pump();
+      expect(find.text('0 items'), findsOneWidget);
+    });
 
-      expect(find.text('Water logged · 250 ml'), findsOneWidget);
-      expect(find.text('Undo'), findsOneWidget);
+    testWidgets('empty account sees the sample data card at 375px', (
+      tester,
+    ) async {
+      await pumpDashboard(tester, width: 375);
+      expect(find.text(SampleDataPrompt.message), findsOneWidget);
+      expect(find.text('Load sample data'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the card hides once there is data', (tester) async {
+      await pumpDashboard(tester, width: 375);
+      Get.find<TaskController>().tasks.add(
+        Task(
+          id: 't1',
+          userId: 'u1',
+          title: 'Water the plants',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      await tester.pump();
+      expect(find.text(SampleDataPrompt.message), findsNothing);
+    });
+
+    testWidgets('account menu offers Load sample data', (tester) async {
+      await pumpDashboard(tester, width: 375);
+      await tester.tap(find.byTooltip('Account & Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Load sample data'), findsWidgets);
+      expect(find.text('Log out'), findsOneWidget);
     });
   });
 }
